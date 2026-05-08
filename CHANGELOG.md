@@ -2,6 +2,21 @@
 
 All notable changes to this workspace are documented here.
 
+## 2026-05-08
+
+### Repository Scope
+
+- Pivoted repository scope to VS Code extension only.
+- Removed tray companion app and related runtime assets.
+- Removed auxiliary probe/release scripts tied to removed components.
+
+### Extension Project
+
+- Kept extension runtime focused on status bar usage monitoring.
+- Updated package metadata links/ownership for independent maintenance.
+- Reworked README for extension-only scope and added attribution guidance.
+- Added `ATTRIBUTION.md` for explicit upstream credit and modification notice.
+
 ## 2026-03-02
 
 ### Tray App (`ai-usage-tray`)
@@ -9,7 +24,8 @@ All notable changes to this workspace are documented here.
 - Finalized gamification integration (`0.3.6`):
   - Added `game-config.js`, `game-engine.js`, `game-store.js`
   - Integrated XP/level/rebirth, achievements, quests, and sound settings
-  - Wired renderer/main IPC for game interactions (`game-pet-click`, `game-set-skin`, `game-set-sound`, etc.)
+  - Wired renderer/main IPC for game interactions (`game-pet-click`,
+    `game-set-skin`, `game-set-sound`, etc.)
 - Added/updated runtime assets:
   - 35 badge images (`tray-app/assets/badges`)
   - cat skin animation set (`tray-app/assets/cat`)
@@ -39,4 +55,5 @@ All notable changes to this workspace are documented here.
 ### VS Code Extension (`ai-usage-statusbar`)
 
 - Extension release remained at `0.2.7`.
-- Maintained app-server-first Codex usage fetch flow and status bar UX refinements.
+- Maintained app-server-first Codex usage fetch flow and status bar UX
+  refinements.

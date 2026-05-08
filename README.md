@@ -1,96 +1,44 @@
 # AI Usage Monitor
 
-Monitor your **Claude** (Anthropic), **Codex** (OpenAI), and **Copilot** usage
-directly from VS Code, and optionally through the companion Windows tray app.
+Real-time Claude, Codex, and Copilot usage monitoring directly in the VS Code
+status bar.
 
-## Workspace Components
+This repository is an independent maintained version focused only on the VS Code
+extension.
 
-- VS Code Extension: `ai-usage-statusbar` (`0.2.7`)
-- Windows Tray App: `ai-usage-tray` (`0.3.6`)  
-  Details: `tray-app/README.md`
-- Spec/Roadmap draft: `SPEC_PLAN.md`
-- Provider adapters are split per app runtime:
-  - Extension: `src/provider-adapter.ts`
-  - Tray: `tray-app/provider-adapter.js`
-  - Shared contract intent: `getClaudeUsage()` / `getCodexUsage()` /
-    `getCopilotUsage()`, but implementation remains app-local.
+## Features
 
-## Extension Features
-
-- Single status bar indicator with Claude/Codex/Copilot usage summary
-- Color-coded warning states (normal/yellow/red)
+- Single status bar indicator with Claude, Codex, and Copilot usage summary
+- Color-coded threshold warnings
 - Tooltip breakdown for 5-hour and 7-day windows
 - 60-second auto-refresh
-- Codex source: `codex app-server` (`account/rateLimits/read`) with local
-  fallback
-- Copilot source: local VS Code `workspaceStorage` (`chatSessions` and
-  `GitHub.copilot-chat/transcripts`) with estimated credit usage
+- Configurable provider markers and display options
+- Copilot estimated spend and token volume from local VS Code chat history
 
-### Provider and Color Configuration
+## Provider Support
 
-Provider enable/disable and status bar color behavior are configured via the
-extension settings (`aiUsageMonitor.*`).
+| Provider | Data source                                                  | Status                              |
+| -------- | ------------------------------------------------------------ | ----------------------------------- |
+| Claude   | OAuth usage API (`~/.claude/.credentials.json`)              | Supported                           |
+| Codex    | `codex app-server` (`account/rateLimits/read`) with fallback | Supported                           |
+| Copilot  | Local VS Code workspace storage and transcripts              | Supported (estimated credits/spend) |
 
-This extension uses settings as the single source of truth for behavior.
+## Configuration
 
-- `aiUsageMonitor.enabledProviders`
-  - Type: `string[]`
-  - Allowed values: `claude`, `codex`, `copilot`
-  - Example: `["codex"]` to run Codex only
-  - Use `[]` to disable all providers
-- `aiUsageMonitor.enableThresholdColors`
-  - Type: `boolean`
-  - `true`: apply warning/critical colors based on thresholds
-  - `false`: keep default status bar foreground color when data is available
-- `aiUsageMonitor.showProviderLetter`
-  - Type: `boolean`
-  - `true`: show marker plus provider letter (for example `🔵 O`)
-  - `false`: show marker only (for example `🔵`)
-- `aiUsageMonitor.providerMarkers`
-  - Type: `object`
-  - Keys: `claude`, `codex`, `copilot`
-  - Customize provider marker symbols
-- `aiUsageMonitor.copilotLookbackDays`
-  - Type: `number` (1-365)
-  - Lookback window used when parsing Copilot local logs
-- `aiUsageMonitor.copilotIncludedCredits`
-  - Type: `number` (>0)
-  - Included credits denominator used for Copilot percentage display
-  - `3900` is a practical starting value for Copilot Pro+
-- `aiUsageMonitor.copilotAutoModel`
-  - Type: `string`
-  - Model used to price Copilot records logged as `auto`
-- `aiUsageMonitor.weeklyExhaustedDisplay`
-  - Type: `string`
-  - Values: `percent`, `remainingDays`
-  - Controls status-bar display when weekly cap is exhausted
-- `aiUsageMonitor.warningThreshold`
-  - Type: `number` (0-100)
-  - Warning color threshold
-- `aiUsageMonitor.criticalThreshold`
-  - Type: `number` (0-100)
-  - Critical color threshold
-- `aiUsageMonitor.statusBarColors`
-  - Type: `object`
-  - Keys: `disabled`, `warning`, `critical`
-  - Set colors that match your VS Code theme
+Configure the extension in `settings.json` using `aiUsageMonitor.*` keys.
 
-Example `settings.json`:
+Example:
 
 ```json
 {
-  "aiUsageMonitor.enabledProviders": ["codex", "copilot"],
+  "aiUsageMonitor.enabledProviders": ["claude", "codex", "copilot"],
   "aiUsageMonitor.enableThresholdColors": true,
-  "aiUsageMonitor.showProviderLetter": false,
+  "aiUsageMonitor.showProviderLetter": true,
   "aiUsageMonitor.providerMarkers": {
-    "claude": "C",
-    "codex": "O",
-    "copilot": "G"
+    "claude": "🟠",
+    "codex": "🔵",
+    "copilot": "🟢"
   },
-  "aiUsageMonitor.copilotLookbackDays": 30,
-  "aiUsageMonitor.copilotIncludedCredits": 1000,
-  "aiUsageMonitor.copilotAutoModel": "gpt-5.3-codex",
-  "aiUsageMonitor.weeklyExhaustedDisplay": "remainingDays",
   "aiUsageMonitor.warningThreshold": 70,
   "aiUsageMonitor.criticalThreshold": 90,
   "aiUsageMonitor.statusBarColors": {
@@ -101,93 +49,33 @@ Example `settings.json`:
 }
 ```
 
-## Extension Requirements
-
-| Tool        | Requirement                         |
-| ----------- | ----------------------------------- |
-| Claude Code | `~/.claude/.credentials.json`       |
-| Codex CLI   | `codex` command available in `PATH` |
-| Copilot     | Local VS Code Copilot chat history  |
-
-Configured tools must be installed and used at least once for usage data to
-appear.
-
-## Copilot Notes (May 2026)
-
-Copilot monitoring is implemented from local VS Code chat data.
-
-- Input tokens are estimated from locally stored request context.
-- Output/cache tokens are exact only when transcript `session.shutdown`
-  `modelMetrics` are available.
-- Some historical Copilot Chat versions under-recorded `completionTokens`; if
-  many records show zero output tokens, limit the lookback window.
-- Credit usage is an estimate derived from local pricing tables and may not
-  match billing exports exactly.
-- The status bar shows estimated USD spend (e.g. `$20.2`) and token volume (e.g.
-  `1.4M tok`) alongside the credit-usage percentage.
-- Hover tooltip shows compact metrics: request count, token totals, estimated
-  spend, credit usage, and a per-model breakdown with rate and spend in USD per
-  1M tokens.
-- Copilot UI "Included premium requests" is a different quota surface than
-  token-credit estimation, so percentages will not match 1:1.
-
 ## Status Bar Example
 
-```
-🟠 C 72% 1h 30m 🔵 O 85% 45m 🟢G 18% $20.2 1.4M tok
-```
-
-Copilot segments show **percent of included credits used**, **estimated USD
-spend**, and **total token volume** for the configured lookback window.
-
-## Quick Probe (Before Extension Debugging)
-
-Run:
-
-```bash
-npm run probe:codex-web
+```text
+🟠 C 72% 1h 30m 🔵 O 85% 45m 🟢 G 18% $20.2 1.4M tok
 ```
 
-Then open:
+## Requirements
 
-```
-http://127.0.0.1:47931
-```
+- VS Code 1.79+
+- At least one configured provider tool used locally at least once
+- Optional tools per provider:
+  - Claude Code credentials file
+  - Codex CLI in PATH
+  - GitHub Copilot chat history in VS Code local storage
 
-Use the button to run a one-shot `codex app-server` check and inspect raw JSON.
+## Attribution
 
-## Development / Debug Quick Guide
+This project is based on MIT-licensed work originally created by Payola Joker.
 
-See `DEVELOPMENT_DEBUG.md` for local extension debug profiles, watch-mode
-workflow, and warning-noise suppression details.
+Original repository: https://github.com/payolajoker/vsix-ai-usage-monitor
 
-## Tray Companion (0.3.6) Summary
+This repository is an independent maintained version with ongoing updates and
+scope focused on the VS Code status bar extension.
 
-- Always-on mini HUD near taskbar clock
-- `STAT` / `QUEST` / `BADGE` tabs in expanded mode
-- XP/level/rebirth + achievements + quests
-- Optional SFX and persistent game state
-
-## Quality Checks
-
-- Tray IPC smoke tests:
-
-```bash
-npm --prefix tray-app run test:ipc
-```
-
-- Tray game unit tests:
-
-```bash
-npm --prefix tray-app run test:game
-```
-
-- Full release gate (compile + syntax + tests + docs/version sync):
-
-```bash
-npm run release:check
-```
+This project is not affiliated with or endorsed by the original author unless
+stated otherwise.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See LICENSE.

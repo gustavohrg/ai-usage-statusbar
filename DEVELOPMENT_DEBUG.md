@@ -51,8 +51,7 @@ env settings above are used to reduce that noise during development.
 
 ```bash
 npm run compile
-npm run test:tray
-npm run release:check
+npm run package:vsix
 ```
 
 ## 6) Extension Settings
