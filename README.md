@@ -6,6 +6,27 @@ status bar.
 This repository is an independent maintained version focused only on the VS Code
 extension.
 
+## Installation
+
+### From VS Code Marketplace
+
+1. Open Extensions in VS Code.
+2. Search for `AI Usage Monitor`.
+3. Click Install.
+
+Direct link (after publish):
+https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusbar
+
+### From VSIX (manual install)
+
+```bash
+npm install
+npm run package:vsix
+code --install-extension ai-usage-statusbar-0.2.7.vsix --force
+```
+
+Then reload VS Code when prompted.
+
 ## Features
 
 - Single status bar indicator with Claude, Codex, and Copilot usage summary
@@ -79,3 +100,9 @@ stated otherwise.
 ## License
 
 MIT. See LICENSE.
+
+## Publisher Metadata
+
+- Extension ID: `gustavohrg.ai-usage-statusbar`
+- Repository: https://github.com/gustavohrg/ai-usage-statusbar
+- Issues: https://github.com/gustavohrg/ai-usage-statusbar/issues

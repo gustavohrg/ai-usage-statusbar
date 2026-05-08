@@ -1,7 +1,7 @@
 {
   "name": "ai-usage-statusbar",
   "displayName": "AI Usage Monitor",
-  "description": "Displays real-time Claude, Codex, and Copilot usage in the VS Code status bar",
+  "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
   "icon": "icon.png",
   "version": "0.2.7",
   "publisher": "gustavohrg",
@@ -21,6 +21,16 @@
   "categories": [
     "Visualization",
     "Other"
+  ],
+  "keywords": [
+    "ai",
+    "usage",
+    "statusbar",
+    "claude",
+    "codex",
+    "copilot",
+    "tokens",
+    "monitoring"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -129,6 +139,6 @@
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.79.0",
     "@vscode/vsce": "^3.7.1",
-    "typescript": "^5.0.0"
+    "typescript": "^6.0.3"
   }
 }
