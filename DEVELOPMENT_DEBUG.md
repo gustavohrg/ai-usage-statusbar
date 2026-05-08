@@ -69,7 +69,7 @@ the Extension Development Host:
 npm run package:vsix
 
 # Install into your running VS Code
-code --install-extension ai-usage-statusbar-0.2.8.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-0.2.8.vsix --force
 ```
 
 Then reload the VS Code window when prompted.
@@ -78,7 +78,7 @@ Then reload the VS Code window when prompted.
 
 ```bash
 npm run package:vsix
-code --install-extension ai-usage-statusbar-0.2.8.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-0.2.8.vsix --force
 # Reload VS Code window
 ```
 

@@ -1,5 +1,5 @@
 {
-  "name": "ai-usage-statusbar",
+  "name": "ai-usage-statusbar-gustavohrg",
   "displayName": "AI Usage Monitor",
   "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
   "icon": "icon.png",

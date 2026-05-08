@@ -9,4 +9,5 @@ SESSION_HANDOFF.md
 SPEC_PLAN.md
 DEVELOPMENT_DEBUG.md
 .vscode/**
+.github/**
 *.vsix

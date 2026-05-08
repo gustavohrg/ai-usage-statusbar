@@ -15,30 +15,31 @@ extension.
 3. Click Install.
 
 Direct link (after publish):
-https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusbar
+https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusbar-gustavohrg
 
 ### From VSIX (manual install)
 
 ```bash
 npm install
 npm run package:vsix
-code --install-extension ai-usage-statusbar-0.2.8.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-0.2.8.vsix --force
 ```
 
 Then reload VS Code when prompted.
 
-## Marketplace Update Without PAT (VSIX Upload)
+### From GitHub Releases
 
-If PAT auth fails for `vsce publish`, you can still release updates through the
-publisher web UI:
+1. Open the Releases page:
+   https://github.com/gustavohrg/ai-usage-statusbar/releases
+2. Select the latest release.
+3. In the right-side Assets section, download the `.vsix` file.
+4. Install it with VS Code:
 
-1. Bump `version` in `package.json` (required for every update).
-2. Run `npm run package:vsix`.
-3. Open https://marketplace.visualstudio.com/manage/publishers/gustavohrg
-4. Select this extension and upload the generated `.vsix` file.
-5. Wait for validation/publish to complete and verify the listing page.
+```bash
+code --install-extension ai-usage-statusbar-gustavohrg-<version>.vsix --force
+```
 
-This flow does not require `vsce login` or a PAT for local publishing commands.
+Then reload VS Code when prompted.
 
 ## Features
 
@@ -118,6 +119,6 @@ MIT. See LICENSE.
 
 ## Publisher Metadata
 
-- Extension ID: `gustavohrg.ai-usage-statusbar`
+- Extension ID: `gustavohrg.ai-usage-statusbar-gustavohrg`
 - Repository: https://github.com/gustavohrg/ai-usage-statusbar
 - Issues: https://github.com/gustavohrg/ai-usage-statusbar/issues
