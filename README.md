@@ -1,4 +1,4 @@
-# AI Usage Monitor
+# AI Usage Monitor GH
 
 Real-time Claude, Codex, and Copilot usage monitoring directly in the VS Code
 status bar.
@@ -11,7 +11,7 @@ extension.
 ### From VS Code Marketplace
 
 1. Open Extensions in VS Code.
-2. Search for `AI Usage Monitor`.
+2. Search for `AI Usage Monitor GH`.
 3. Click Install.
 
 Direct link (after publish):
@@ -22,7 +22,7 @@ https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusba
 ```bash
 npm install
 npm run package:vsix
-code --install-extension ai-usage-statusbar-gustavohrg-0.2.8.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-0.2.9.vsix --force
 ```
 
 Then reload VS Code when prompted.
