@@ -15,14 +15,14 @@ extension.
 3. Click Install.
 
 Direct link (after publish):
-https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusbar-gustavohrg
+https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusbar-gustavohrg-2026
 
 ### From VSIX (manual install)
 
 ```bash
 npm install
 npm run package:vsix
-code --install-extension ai-usage-statusbar-gustavohrg-0.2.9.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-2026-0.2.10.vsix --force
 ```
 
 Then reload VS Code when prompted.
@@ -36,7 +36,7 @@ Then reload VS Code when prompted.
 4. Install it with VS Code:
 
 ```bash
-code --install-extension ai-usage-statusbar-gustavohrg-<version>.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-2026-<version>.vsix --force
 ```
 
 Then reload VS Code when prompted.
@@ -119,6 +119,6 @@ MIT. See LICENSE.
 
 ## Publisher Metadata
 
-- Extension ID: `gustavohrg.ai-usage-statusbar-gustavohrg`
+- Extension ID: `gustavohrg.ai-usage-statusbar-gustavohrg-2026`
 - Repository: https://github.com/gustavohrg/ai-usage-statusbar
 - Issues: https://github.com/gustavohrg/ai-usage-statusbar/issues
