@@ -1,6 +1,6 @@
 {
   "name": "ai-usage-statusbar-gustavohrg-2026",
-  "displayName": "AI Usage Monitor GH",
+  "displayName": "AI Usage Pulse GH 2026",
   "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
   "icon": "icon.png",
   "version": "0.2.11",
@@ -38,7 +38,7 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "AI Usage Monitor GH",
+      "title": "AI Usage Pulse GH 2026",
       "properties": {
         "aiUsageMonitor.enabledProviders": {
           "type": "array",

@@ -1,4 +1,4 @@
-# AI Usage Monitor GH
+# AI Usage Pulse GH 2026
 
 Real-time Claude, Codex, and Copilot usage monitoring directly in the VS Code
 status bar.
@@ -11,7 +11,7 @@ extension.
 ### From VS Code Marketplace
 
 1. Open Extensions in VS Code.
-2. Search for `AI Usage Monitor GH`.
+2. Search for `AI Usage Pulse GH 2026`.
 3. Click Install.
 
 Direct link (after publish):
