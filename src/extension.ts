@@ -35,6 +35,9 @@ interface DisplayConfig {
   };
 }
 
+type CopilotWindowMode = 'lookbackDays' | 'currentMonth';
+type ProviderAlertLevel = 'none' | 'warning' | 'critical';
+
 const DEFAULT_PROVIDERS: ProviderKey[] = ['claude', 'codex', 'copilot'];
 const DEFAULT_PROVIDER_MARKERS: Record<ProviderKey, string> = {
   claude: '🟠',
@@ -117,11 +120,22 @@ function getCopilotConfig(): CopilotUsageOptions {
   )
     .trim()
     .toLowerCase();
+  const windowMode = normalizeCopilotWindowMode(
+    config.get<string>('copilotWindowMode', 'lookbackDays'),
+  );
   return {
     lookbackDays,
     includedCredits,
     autoModel,
+    windowMode,
   };
+}
+
+function normalizeCopilotWindowMode(value: unknown): CopilotWindowMode {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  return normalized === 'currentmonth' ? 'currentMonth' : 'lookbackDays';
 }
 
 function getDisplayConfig(): DisplayConfig {
@@ -277,14 +291,17 @@ function renderCombinedBar(
     bar.color = display.statusColors.disabled;
   } else if (!display.enableThresholdColors) {
     bar.color = undefined;
-  } else {
-    const maxUsed = Math.max(...usable);
+  } else if (usable.length === 1) {
+    const used = usable[0] ?? 0;
     bar.color =
-      maxUsed >= display.criticalThreshold
+      used >= display.criticalThreshold
         ? display.statusColors.critical
-        : maxUsed >= display.warningThreshold
+        : used >= display.warningThreshold
           ? display.statusColors.warning
           : undefined;
+  } else {
+    // Keep multi-provider bar neutral; segment badges indicate per-provider alert state.
+    bar.color = undefined;
   }
 
   const tip = new vscode.MarkdownString();
@@ -366,7 +383,45 @@ function formatProviderPrefix(
   const marker =
     display.providerMarkers[provider.key] ??
     DEFAULT_PROVIDER_MARKERS[provider.key];
-  return display.showProviderLetter ? `${marker} ${provider.label}` : marker;
+  const base = display.showProviderLetter
+    ? `${marker} ${provider.label}`
+    : marker;
+  const alertBadge = getProviderAlertBadge(provider, display);
+  return alertBadge ? `${base}${alertBadge}` : base;
+}
+
+function getProviderAlertBadge(
+  provider: ProviderViewModel,
+  display: DisplayConfig,
+): string {
+  if (!display.enableThresholdColors) {
+    return '';
+  }
+  const alertLevel = getProviderAlertLevel(provider, display);
+  if (alertLevel === 'critical') {
+    return ' 🔴';
+  }
+  if (alertLevel === 'warning') {
+    return ' 🟡';
+  }
+  return '';
+}
+
+function getProviderAlertLevel(
+  provider: ProviderViewModel,
+  display: DisplayConfig,
+): ProviderAlertLevel {
+  const used = getAlertPercent(provider.data, provider.scale);
+  if (used === null) {
+    return 'none';
+  }
+  if (used >= display.criticalThreshold) {
+    return 'critical';
+  }
+  if (used >= display.warningThreshold) {
+    return 'warning';
+  }
+  return 'none';
 }
 
 function isWeeklyExhausted(data: AgentUsage, scale: UsageScale): boolean {

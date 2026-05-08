@@ -61,7 +61,7 @@
         "aiUsageMonitor.enableThresholdColors": {
           "type": "boolean",
           "default": true,
-          "description": "Enable warning/critical threshold coloring in the status bar."
+          "description": "Enable per-provider warning/critical indicators. For a single enabled provider, threshold color is also applied to the whole status bar item."
         },
         "aiUsageMonitor.showProviderLetter": {
           "type": "boolean",
@@ -82,7 +82,16 @@
           "default": 30,
           "minimum": 1,
           "maximum": 365,
-          "description": "Copilot usage lookback window in days when estimating token volume and credits."
+          "description": "Copilot usage lookback window in days when estimating token volume and credits. Used when copilotWindowMode is set to lookbackDays."
+        },
+        "aiUsageMonitor.copilotWindowMode": {
+          "type": "string",
+          "enum": [
+            "lookbackDays",
+            "currentMonth"
+          ],
+          "default": "lookbackDays",
+          "description": "Copilot usage period mode: rolling lookbackDays window or current calendar month."
         },
         "aiUsageMonitor.copilotIncludedCredits": {
           "type": "number",

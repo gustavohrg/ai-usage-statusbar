@@ -30,7 +30,7 @@ Then reload VS Code when prompted.
 ## Features
 
 - Single status bar indicator with Claude, Codex, and Copilot usage summary
-- Color-coded threshold warnings
+- Provider-level threshold warnings (warning and critical badges per provider)
 - Tooltip breakdown for 5-hour and 7-day windows
 - 60-second auto-refresh
 - Configurable provider markers and display options
@@ -60,6 +60,8 @@ Example:
     "codex": "🔵",
     "copilot": "🟢"
   },
+  "aiUsageMonitor.copilotWindowMode": "currentMonth",
+  "aiUsageMonitor.copilotLookbackDays": 30,
   "aiUsageMonitor.warningThreshold": 70,
   "aiUsageMonitor.criticalThreshold": 90,
   "aiUsageMonitor.statusBarColors": {

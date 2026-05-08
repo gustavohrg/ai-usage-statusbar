@@ -124,6 +124,7 @@ export interface CopilotUsageOptions {
   lookbackDays: number;
   includedCredits: number;
   autoModel?: string;
+  windowMode?: 'lookbackDays' | 'currentMonth';
 }
 
 interface CopilotUsageRecord {
@@ -339,7 +340,12 @@ export async function getCopilotUsage(
       Number(options.includedCredits || 1000),
     );
     const autoModel = normalizeModel(options.autoModel || 'gpt-5.3-codex');
-    const sinceMs = Date.now() - lookbackDays * 24 * 60 * 60 * 1000;
+    const windowMode =
+      options.windowMode === 'currentMonth' ? 'currentMonth' : 'lookbackDays';
+    const { sinceMs, windowLabel } = getCopilotWindowRange(
+      windowMode,
+      lookbackDays,
+    );
 
     const roots = getVsCodeWorkspaceStorageRoots().filter((root) =>
       fs.existsSync(root),
@@ -446,7 +452,7 @@ export async function getCopilotUsage(
     );
 
     const tooltipNotes = [
-      `${lookbackDays}d window`,
+      `${windowLabel} window`,
       `${formatInteger(records.length)} records`,
       `${formatInteger(totalTokens)} tokens`,
       `$${spendUsd.toFixed(2)} spend`,
@@ -508,6 +514,28 @@ export async function getCopilotUsage(
       ),
     };
   }
+}
+
+function getCopilotWindowRange(
+  mode: 'lookbackDays' | 'currentMonth',
+  lookbackDays: number,
+): { sinceMs: number; windowLabel: string } {
+  if (mode === 'currentMonth') {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthLabel = monthStart.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
+    return {
+      sinceMs: monthStart.getTime(),
+      windowLabel: `${monthLabel} (current month)`,
+    };
+  }
+  return {
+    sinceMs: Date.now() - lookbackDays * 24 * 60 * 60 * 1000,
+    windowLabel: `${lookbackDays}d`,
+  };
 }
 
 async function getCodexUsageFromAppServer(): Promise<AgentUsage> {
