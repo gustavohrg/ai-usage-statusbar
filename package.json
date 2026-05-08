@@ -3,7 +3,7 @@
   "displayName": "AI Usage Monitor",
   "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
   "icon": "icon.png",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "publisher": "gustavohrg",
   "author": "Gustavo Henrique",
   "license": "MIT",
@@ -147,7 +147,7 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.79.0",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^3.9.1",
     "typescript": "^6.0.3"
   }
 }

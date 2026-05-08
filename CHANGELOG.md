@@ -10,6 +10,16 @@ All notable changes to this workspace are documented here.
 - Removed tray companion app and related runtime assets.
 - Removed auxiliary probe/release scripts tied to removed components.
 
+### Extension Release (`0.2.8`)
+
+- Added provider-specific threshold alert badges in status bar segments so one
+  provider no longer forces full-line red in multi-provider mode.
+- Added Copilot usage period mode setting (`copilotWindowMode`) with support for
+  `lookbackDays` and `currentMonth`.
+- Updated release workflow docs for PAT-free Marketplace updates via manual VSIX
+  upload.
+- Upgraded `@vscode/vsce` to latest stable (`3.9.1`) for packaging.
+
 ### Extension Project
 
 - Kept extension runtime focused on status bar usage monitoring.

@@ -22,10 +22,23 @@ https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusba
 ```bash
 npm install
 npm run package:vsix
-code --install-extension ai-usage-statusbar-0.2.7.vsix --force
+code --install-extension ai-usage-statusbar-0.2.8.vsix --force
 ```
 
 Then reload VS Code when prompted.
+
+## Marketplace Update Without PAT (VSIX Upload)
+
+If PAT auth fails for `vsce publish`, you can still release updates through the
+publisher web UI:
+
+1. Bump `version` in `package.json` (required for every update).
+2. Run `npm run package:vsix`.
+3. Open https://marketplace.visualstudio.com/manage/publishers/gustavohrg
+4. Select this extension and upload the generated `.vsix` file.
+5. Wait for validation/publish to complete and verify the listing page.
+
+This flow does not require `vsce login` or a PAT for local publishing commands.
 
 ## Features
 
