@@ -3,7 +3,7 @@
   "displayName": "AI Usage Monitor GH",
   "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
   "icon": "icon.png",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "publisher": "gustavohrg",
   "author": "Gustavo Henrique",
   "license": "MIT",
