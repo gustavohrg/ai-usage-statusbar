@@ -9,12 +9,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gustavohrg/vsix-ai-usage-monitor.git"
+    "url": "https://github.com/gustavohrg/ai-usage-statusbar.git"
   },
   "bugs": {
-    "url": "https://github.com/gustavohrg/vsix-ai-usage-monitor/issues"
+    "url": "https://github.com/gustavohrg/ai-usage-statusbar/issues"
   },
-  "homepage": "https://github.com/gustavohrg/vsix-ai-usage-monitor#readme",
+  "homepage": "https://github.com/gustavohrg/ai-usage-statusbar#readme",
   "engines": {
     "vscode": "^1.79.0"
   },
