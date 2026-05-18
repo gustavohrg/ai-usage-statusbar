@@ -1,9 +1,10 @@
-﻿import * as fs from 'fs';
-import * as os from 'os';
+﻿import { spawn } from 'child_process';
+import * as fs from 'fs';
 import * as https from 'https';
+import * as os from 'os';
 import * as path from 'path';
-import { spawn } from 'child_process';
 import * as readline from 'readline';
+import * as vscode from 'vscode';
 
 // App-local provider adapter for VS Code extension runtime.
 
@@ -111,6 +112,13 @@ export interface AgentUsage {
   fiveHour: UsageResult | null;
   sevenDay: UsageResult | null;
   error?: string;
+  displayHint?: string;
+  raw?: {
+    usedPercent: number;
+    remaining: number;
+    limit: number;
+    reset: number;
+  };
   meta?: {
     segmentSuffix?: string;
     tooltipNotes?: string[];
@@ -379,7 +387,7 @@ export async function getCopilotUsage(
       if (parsed.records.length > 0) {
         records.push(...parsed.records);
       }
-      if (parsed.sessionId) {
+      if (parsed.sessionId && parsed.records.length > 0) {
         exactSessionIds.add(parsed.sessionId);
       }
       if (parsed.hasShutdown) {
@@ -396,6 +404,33 @@ export async function getCopilotUsage(
     }
 
     if (records.length === 0) {
+      console.log('[Copilot] No local records found, trying API fallback...');
+      console.log(
+        `[Copilot] roots=${roots.length}, transcriptFiles=${transcriptFiles.length}, chatFiles=${chatFiles.length}`,
+      );
+      const rateLimit = await fetchCopilotRateLimit();
+      if (rateLimit) {
+        const usedPercent =
+          rateLimit.limit > 0
+            ? Math.round((rateLimit.used / rateLimit.limit) * 100)
+            : 0;
+        const resetDate =
+          rateLimit.reset > 0 ? new Date(rateLimit.reset * 1000) : null;
+        const resetLabel = resetDate
+          ? `resets ${resetDate.toLocaleDateString()} ${resetDate.toLocaleTimeString()}`
+          : 'reset unknown';
+        return {
+          fiveHour: null,
+          sevenDay: null,
+          displayHint: `${usedPercent}% used (${rateLimit.used}/${rateLimit.limit}), ${resetLabel}`,
+          raw: {
+            usedPercent,
+            remaining: rateLimit.remaining,
+            limit: rateLimit.limit,
+            reset: rateLimit.reset,
+          },
+        };
+      }
       return {
         fiveHour: null,
         sevenDay: null,
@@ -1271,6 +1306,66 @@ function formatCompactCurrency(value: number): string {
     return `${value.toFixed(1).replace(/\.0$/, '')}`;
   }
   return `${value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}`;
+}
+
+async function fetchCopilotRateLimit(): Promise<{
+  remaining: number;
+  reset: number;
+  used: number;
+  limit: number;
+} | null> {
+  try {
+    // Copilot uses github.copilot auth provider, not plain github
+    const providers = ['github.copilot', 'github'];
+    let session: vscode.AuthenticationSession | undefined;
+    for (const providerId of providers) {
+      session = await vscode.authentication.getSession(providerId, [], {
+        createIfNone: false,
+      });
+      if (session) {
+        console.log(`[Copilot] Got auth session from provider: ${providerId}`);
+        break;
+      }
+    }
+    if (!session) {
+      console.error('[Copilot] No Copilot/GitHub auth session found');
+      return null;
+    }
+
+    console.log('[Copilot] Got GitHub auth session, fetching rate limit...');
+    const token = session.accessToken;
+    const data = await httpsJsonRequest(
+      'GET',
+      'api.github.com',
+      '/copilot_internal/v2/token',
+      {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'User-Agent': 'ai-usage-statusbar',
+      },
+    );
+
+    console.log(
+      '[Copilot] API response:',
+      JSON.stringify(data).substring(0, 500),
+    );
+
+    if (data && typeof data === 'object') {
+      const remaining = Number(data.remaining ?? data.rate?.remaining ?? 0);
+      const reset = Number(data.reset ?? data.rate?.reset ?? 0);
+      const used = Number(data.used ?? data.rate?.used ?? 0);
+      const limit = Number(data.limit ?? data.rate?.limit ?? 0);
+      console.log(
+        `[Copilot] Parsed: used=${used}, limit=${limit}, remaining=${remaining}`,
+      );
+      return { remaining, reset, used, limit };
+    }
+    console.error('[Copilot] Invalid API response structure');
+    return null;
+  } catch (err) {
+    console.error('[Copilot] API fetch failed:', err);
+    return null;
+  }
 }
 
 function getVsCodeWorkspaceStorageRoots(): string[] {
