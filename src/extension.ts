@@ -326,6 +326,10 @@ function getFiveHourPercent(
 }
 
 function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
+  // API fallback: use rate limit percent
+  if (data.displayHint && data.raw) {
+    return data.raw.usedPercent;
+  }
   if (data.error) {
     return null;
   }
@@ -341,6 +345,12 @@ function formatSegment(
 ): string {
   const prefix = formatProviderPrefix(provider, display);
   const { data, scale } = provider;
+
+  // API fallback: show rate limit percent when no local data
+  if (data.displayHint && data.raw) {
+    return `${prefix} ${data.raw.usedPercent}%`;
+  }
+
   if (data.error || !data.fiveHour) {
     return `${prefix} --`;
   }
@@ -438,6 +448,19 @@ function appendUsageTooltip(
   scale: UsageScale,
 ) {
   tip.appendMarkdown(`**${name}**\n\n`);
+
+  // API fallback: show rate limit info from GitHub API
+  if (data.displayHint && data.raw) {
+    tip.appendMarkdown(`- ${data.displayHint}\n`);
+    if (data.meta?.tooltipNotes?.length) {
+      tip.appendMarkdown('\n');
+      for (const note of data.meta.tooltipNotes) {
+        tip.appendMarkdown(`- ${note}\n`);
+      }
+    }
+    return;
+  }
+
   if (data.error || !data.fiveHour) {
     tip.appendMarkdown(`- ${data.error ?? 'No data available'}\n`);
     return;
