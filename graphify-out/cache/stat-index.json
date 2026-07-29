@@ -1,0 +1,132 @@
+{
+  ".github/workflows/release-vsix.yml": {
+    "size": 1995,
+    "mtime_ns": 1778255419289291553,
+    "word_count": 185,
+    "hashes": {
+      ".github/workflows/release-vsix.yml": "ca7f48d22c691b2a2514948bc7c6d1e65004b43e88f3b55eb10ad786d364d1ef"
+    }
+  },
+  ".vscode/launch.json": {
+    "size": 865,
+    "mtime_ns": 1777815524840697191,
+    "word_count": 60,
+    "hashes": {
+      ".vscode/launch.json": "8ddab11b82da54156281ad90c73372be2e374e3414c042ea9d9cfb72c9c8c7fe"
+    }
+  },
+  ".vscode/tasks.json": {
+    "size": 524,
+    "mtime_ns": 1777815524840697191,
+    "word_count": 55,
+    "hashes": {
+      ".vscode/tasks.json": "39d1bb42b34a9349164f8ae353cb279957874240d42e83b72f94562765cca493"
+    }
+  },
+  "ATTRIBUTION.md": {
+    "size": 403,
+    "mtime_ns": 1778252522387979129,
+    "word_count": 47,
+    "hashes": {
+      "attribution.md": "d74c30ac47b4bcc0abbace4d96700a71c5559fbb83e94b4f79a92ecbc99f9727"
+    }
+  },
+  "CHANGELOG.md": {
+    "size": 2498,
+    "mtime_ns": 1778255369343755412,
+    "word_count": 312,
+    "hashes": {
+      "changelog.md": "909b265ee57302b3292b3eafb77c56323d43eecfa72b3b795d3b273936e2c39a"
+    }
+  },
+  "DEVELOPMENT_DEBUG.md": {
+    "size": 2056,
+    "mtime_ns": 1778256098779754549,
+    "word_count": 290,
+    "hashes": {
+      "development_debug.md": "638b69ff847bf3759958898b5dba6fddbdbe40ad3b9d44adbdb39e2472794c28"
+    }
+  },
+  "PROJECT_ANALYSIS.md": {
+    "size": 2721,
+    "mtime_ns": 1777729690484828302,
+    "word_count": 367,
+    "hashes": {
+      "project_analysis.md": "124ad0f5a28fd5b23c8d15b2ee8992e8e20ecb4ec9c3a9bef9e250e982fdcb18"
+    }
+  },
+  "README.md": {
+    "size": 3676,
+    "mtime_ns": 1778256437974200252,
+    "word_count": 420,
+    "hashes": {
+      "readme.md": "e457cd8d41216a3878208b2b05ab392087f59b287119214890c1e17c35328183"
+    }
+  },
+  "SESSION_HANDOFF.md": {
+    "size": 3891,
+    "mtime_ns": 1777729690485828211,
+    "word_count": 493,
+    "hashes": {
+      "session_handoff.md": "bfd6801164f3a66d6c4e78ef09ee35ea7e04fc12aae6f89ed81d939c8958a0c9"
+    }
+  },
+  "SPEC_PLAN.md": {
+    "size": 3988,
+    "mtime_ns": 1777729690485828211,
+    "word_count": 484,
+    "hashes": {
+      "spec_plan.md": "e5e5a1310346cb83a3e08062da26b6524dfbdb7d0e0a6e3bfa40b87dbcb6764a"
+    }
+  },
+  "icon.png": {
+    "size": 830073,
+    "mtime_ns": 1778255202219763423,
+    "word_count": 30069,
+    "hashes": {
+      "icon.png": "a297dfa805fe9303b37c89563dc3736873bafde847a8796dda4bc4c8212a41d2"
+    }
+  },
+  "memory/MEMORY.md": {
+    "size": 2035,
+    "mtime_ns": 1777729690485828211,
+    "word_count": 260,
+    "hashes": {
+      "memory/memory.md": "0cf6505fb1cfe99361dd7a2fc8a3a75a507a2e5cd89ac327880346dbdb857aac"
+    }
+  },
+  "memory/tray-app-issues.md": {
+    "size": 3116,
+    "mtime_ns": 1777729690486828121,
+    "word_count": 324,
+    "hashes": {
+      "memory/tray-app-issues.md": "61d12812b39997e09af8bfe76ef21cd7f9e754a8e466cae3b6bae4eee2b4b861"
+    }
+  },
+  "package.json": {
+    "size": 4971,
+    "mtime_ns": 1780321641625207443,
+    "word_count": 437,
+    "hashes": {
+      "package.json": "c410c9b587a5fb9f82f2921efc0bd588679361c04000d278c0cf97bcebd2c88a"
+    }
+  },
+  "src/extension.ts": {
+    "size": 14749,
+    "mtime_ns": 1785334784540809889,
+    "word_count": 1470
+  },
+  "src/provider-adapter.ts": {
+    "size": 45485,
+    "mtime_ns": 1785334895816388308,
+    "word_count": 4500
+  },
+  "tsconfig.json": {
+    "size": 301,
+    "mtime_ns": 1777736462625180159,
+    "word_count": 27,
+    "hashes": {
+      "tsconfig.json": "b0af10ff49cca0a4dfb1d3f1b607fe2a95ac1dab4079f8889cbfb3f1e4806fde"
+    }
+  }
+}

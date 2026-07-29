@@ -2,3 +2,8 @@ node_modules/
 *.vsix
 out/
 output/playwright/
+
+# Graphify testing
+# https://github.com/Graphify-Labs/graphify
+graphify-out/cost.json
+# graphify-out/cache/         # optional: commit for speed, skip to keep repo small
