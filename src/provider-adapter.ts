@@ -148,6 +148,11 @@ interface CopilotUsageRecord {
 interface CodexRateLimitWindow {
   usedPercent?: number;
   resetsAt?: number | null;
+  windowDurationMins?: number | null;
+  windowDurationMinutes?: number | null;
+  windowMinutes?: number | null;
+  window_minutes?: number | null;
+  window_duration_mins?: number | null;
 }
 
 interface CodexRateLimitSnapshot {
@@ -577,18 +582,15 @@ async function getCodexUsageFromAppServer(): Promise<AgentUsage> {
   try {
     const result = await readCodexRateLimitsFromAppServer();
     const snapshot = pickCodexSnapshot(result);
-    if (!snapshot?.primary) {
+    if (!snapshot?.primary && !snapshot?.secondary) {
       return {
         fiveHour: null,
         sevenDay: null,
-        error: 'No primary rate limit window from app server',
+        error: 'No rate limit windows from app server',
       };
     }
 
-    return {
-      fiveHour: mapCodexWindow(snapshot.primary),
-      sevenDay: snapshot.secondary ? mapCodexWindow(snapshot.secondary) : null,
-    };
+    return mapCodexWindows(snapshot);
   } catch (error: any) {
     return {
       fiveHour: null,
@@ -604,6 +606,7 @@ function readCodexRateLimitsFromAppServer(): Promise<CodexRateLimitsResult> {
     const rl = readline.createInterface({ input: child.stdout });
 
     let settled = false;
+    let rateLimitsRequestSent = false;
     let stderr = '';
     let requestTimer: NodeJS.Timeout | undefined;
 
@@ -648,6 +651,10 @@ function readCodexRateLimitsFromAppServer(): Promise<CodexRateLimitsResult> {
       // ignore EPIPE when the process exits while writing
     });
 
+    const send = (payload: Record<string, any>) => {
+      child.stdin.write(`${JSON.stringify(payload)}\n`);
+    };
+
     rl.on('line', (line) => {
       const trimmed = line.trim();
       if (!trimmed) {
@@ -658,6 +665,28 @@ function readCodexRateLimitsFromAppServer(): Promise<CodexRateLimitsResult> {
       try {
         msg = JSON.parse(trimmed);
       } catch {
+        return;
+      }
+
+      if (msg.id === CODEX_INIT_REQUEST_ID) {
+        if (msg.error) {
+          doneReject(
+            new Error(
+              `codex app-server initialize failed: ${msg.error?.message ?? 'Unknown error'}`,
+            ),
+          );
+          return;
+        }
+        if (!rateLimitsRequestSent) {
+          rateLimitsRequestSent = true;
+          send({ jsonrpc: '2.0', method: 'initialized', params: {} });
+          send({
+            jsonrpc: '2.0',
+            id: CODEX_RATE_LIMITS_REQUEST_ID,
+            method: 'account/rateLimits/read',
+            params: null,
+          });
+        }
         return;
       }
 
@@ -693,10 +722,6 @@ function readCodexRateLimitsFromAppServer(): Promise<CodexRateLimitsResult> {
       doneReject(new Error('codex app-server request timed out'));
     }, CODEX_APP_SERVER_TIMEOUT_MS);
 
-    const send = (payload: Record<string, any>) => {
-      child.stdin.write(`${JSON.stringify(payload)}\n`);
-    };
-
     send({
       jsonrpc: '2.0',
       id: CODEX_INIT_REQUEST_ID,
@@ -705,13 +730,6 @@ function readCodexRateLimitsFromAppServer(): Promise<CodexRateLimitsResult> {
         clientInfo: { name: 'ai-usage-monitor', version: '0.2.7' },
         capabilities: { experimentalApi: true },
       },
-    });
-    send({ jsonrpc: '2.0', method: 'initialized', params: {} });
-    send({
-      jsonrpc: '2.0',
-      id: CODEX_RATE_LIMITS_REQUEST_ID,
-      method: 'account/rateLimits/read',
-      params: null,
     });
   });
 }
@@ -780,6 +798,54 @@ function mapCodexWindow(window: CodexRateLimitWindow): UsageResult {
   };
 }
 
+function mapCodexWindows(snapshot: CodexRateLimitSnapshot): AgentUsage {
+  const windows = [snapshot.primary, snapshot.secondary].filter(
+    (window): window is CodexRateLimitWindow => Boolean(window),
+  );
+
+  const hasDurationMetadata = windows.some(
+    (window) => getCodexWindowDurationMins(window) !== null,
+  );
+  if (!hasDurationMetadata) {
+    // Older Codex responses used fixed primary=5h, secondary=7d slots.
+    return {
+      fiveHour: snapshot.primary ? mapCodexWindow(snapshot.primary) : null,
+      sevenDay: snapshot.secondary ? mapCodexWindow(snapshot.secondary) : null,
+    };
+  }
+
+  const fiveHour = windows.find(
+    (window) => getCodexWindowDurationMins(window) === 300,
+  );
+  const sevenDay = windows.find(
+    (window) => getCodexWindowDurationMins(window) === 10_080,
+  );
+
+  return {
+    fiveHour: fiveHour ? mapCodexWindow(fiveHour) : null,
+    sevenDay: sevenDay ? mapCodexWindow(sevenDay) : null,
+  };
+}
+
+function getCodexWindowDurationMins(
+  window: CodexRateLimitWindow,
+): number | null {
+  const values = [
+    window.windowDurationMins,
+    window.windowDurationMinutes,
+    window.windowMinutes,
+    window.window_minutes,
+    window.window_duration_mins,
+  ];
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
+    }
+  }
+  return null;
+}
+
 function unixToIso(ts: number | string | null | undefined): string {
   if (!ts) {
     return '';
@@ -844,29 +910,33 @@ async function getCodexUsageFromSessions(): Promise<AgentUsage> {
       return { fiveHour: null, sevenDay: null, error: 'No rate limits data' };
     }
 
-    const primary = rateLimits.primary ?? {};
-    const secondary = rateLimits.secondary ?? null;
-    const primaryUsed = Number(
-      primary.used_percent ?? primary.usedPercent ?? 0,
-    );
-    const secondaryUsed = Number(
-      secondary?.used_percent ?? secondary?.usedPercent ?? 0,
-    );
-    return {
-      fiveHour: {
-        utilization: Number.isFinite(primaryUsed) ? primaryUsed : 0,
-        resetsAt: unixToIso(primary.resets_at ?? primary.resetsAt),
-      },
-      sevenDay: secondary
-        ? {
-            utilization: Number.isFinite(secondaryUsed) ? secondaryUsed : 0,
-            resetsAt: unixToIso(secondary.resets_at ?? secondary.resetsAt),
-          }
+    const snapshot: CodexRateLimitSnapshot = {
+      primary: rateLimits.primary
+        ? normalizeCodexSessionWindow(rateLimits.primary)
+        : null,
+      secondary: rateLimits.secondary
+        ? normalizeCodexSessionWindow(rateLimits.secondary)
         : null,
     };
+    return mapCodexWindows(snapshot);
   } catch (error: any) {
     return { fiveHour: null, sevenDay: null, error: String(error.message) };
   }
+}
+
+function normalizeCodexSessionWindow(window: any): CodexRateLimitWindow | null {
+  if (!window || typeof window !== 'object') {
+    return null;
+  }
+  return {
+    usedPercent: Number(window?.used_percent ?? window?.usedPercent ?? 0),
+    resetsAt: window?.resets_at ?? window?.resetsAt,
+    windowDurationMins:
+      window?.window_duration_mins ??
+      window?.windowDurationMins ??
+      window?.window_minutes ??
+      window?.windowMinutes,
+  };
 }
 
 function findJsonlFiles(dir: string): string[] {
