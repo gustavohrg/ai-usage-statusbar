@@ -325,6 +325,16 @@ function getFiveHourPercent(
   return toPercent(data.fiveHour.utilization, scale);
 }
 
+function getSevenDayPercent(
+  data: AgentUsage,
+  scale: UsageScale,
+): number | null {
+  if (data.error || !data.sevenDay) {
+    return null;
+  }
+  return toPercent(data.sevenDay.utilization, scale);
+}
+
 function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
   // API fallback: use rate limit percent
   if (data.displayHint && data.raw) {
@@ -336,7 +346,7 @@ function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
   if (isWeeklyExhausted(data, scale)) {
     return 100;
   }
-  return getFiveHourPercent(data, scale);
+  return getFiveHourPercent(data, scale) ?? getSevenDayPercent(data, scale);
 }
 
 function formatSegment(
@@ -351,7 +361,7 @@ function formatSegment(
     return `${prefix} ${data.raw.usedPercent}%`;
   }
 
-  if (data.error || !data.fiveHour) {
+  if (data.error) {
     return `${prefix} --`;
   }
 
@@ -363,13 +373,19 @@ function formatSegment(
     return `${prefix} 100%`;
   }
 
-  const used5h = toPercent(data.fiveHour.utilization, scale);
-  const reset5h = formatReset(data.fiveHour.resetsAt);
-  const showReset = !data.meta?.hideReset && Boolean(reset5h);
+  const activeWindow = data.fiveHour ?? data.sevenDay;
+  if (!activeWindow) {
+    return `${prefix} --`;
+  }
+
+  const used = toPercent(activeWindow.utilization, scale);
+  const reset = formatReset(activeWindow.resetsAt);
+  const showReset = !data.meta?.hideReset && Boolean(reset);
   const segmentSuffix = data.meta?.segmentSuffix
     ? ` ${data.meta.segmentSuffix}`
     : '';
-  return `${prefix} ${used5h}%${showReset ? ` ${reset5h}` : ''}${segmentSuffix}`;
+  const windowLabel = data.fiveHour ? '' : ' 7d';
+  return `${prefix}${windowLabel} ${used}%${showReset ? ` ${reset}` : ''}${segmentSuffix}`;
 }
 
 function formatDaysRemaining(iso: string): string {
@@ -461,7 +477,7 @@ function appendUsageTooltip(
     return;
   }
 
-  if (data.error || !data.fiveHour) {
+  if (data.error || (!data.fiveHour && !data.sevenDay)) {
     tip.appendMarkdown(`- ${data.error ?? 'No data available'}\n`);
     return;
   }
@@ -486,17 +502,24 @@ function appendUsageTooltip(
     return;
   }
 
-  const used5h = toPercent(data.fiveHour.utilization, scale);
-  const reset5h = formatReset(data.fiveHour.resetsAt);
-  const primaryLabel = data.meta?.primaryLabel || '5-Hour Session';
-  tip.appendMarkdown(
-    `| ${primaryLabel} | **${used5h}%** | ${reset5h || '--'} |\n`,
-  );
+  if (data.fiveHour) {
+    const used5h = toPercent(data.fiveHour.utilization, scale);
+    const reset5h = formatReset(data.fiveHour.resetsAt);
+    const primaryLabel = data.meta?.primaryLabel || '5-Hour Session';
+    tip.appendMarkdown(
+      `| ${primaryLabel} | **${used5h}%** | ${reset5h || '--'} |\n`,
+    );
+  }
   if (data.sevenDay) {
     const used7d = toPercent(data.sevenDay.utilization, scale);
     const reset7d = formatReset(data.sevenDay.resetsAt);
     tip.appendMarkdown(
       `| 7-Day Weekly | **${used7d}%** | ${reset7d || '--'} |\n`,
+    );
+  }
+  if (!data.fiveHour) {
+    tip.appendMarkdown(
+      '\n- 5-Hour Session is not present in the current Codex rate-limit response.\n',
     );
   }
 
