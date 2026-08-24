@@ -1,13 +1,13 @@
 src/**
+test/**
+docs/**
+graphify-out/**
 node_modules/**
 tsconfig.json
 .vscodeignore
-PROJECT_ANALYSIS.md
 output/**
 memory/**
-SESSION_HANDOFF.md
-SPEC_PLAN.md
-DEVELOPMENT_DEBUG.md
 .vscode/**
 .github/**
+.gitignore
 *.vsix
