@@ -22,7 +22,7 @@ https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusba
 ```bash
 npm install
 npm run package:vsix
-code --install-extension ai-usage-statusbar-gustavohrg-2026-0.2.10.vsix --force
+code --install-extension ai-usage-statusbar-gustavohrg-2026-<version>.vsix --force
 ```
 
 Then reload VS Code when prompted.
