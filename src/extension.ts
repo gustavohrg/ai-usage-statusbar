@@ -205,7 +205,6 @@ function normalizeWeeklyExhaustedDisplay(
   return normalized === 'remainingdays' ? 'remainingDays' : 'percent';
 }
 
-
 function clampPercent(value: unknown): number {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
@@ -213,7 +212,6 @@ function clampPercent(value: unknown): number {
   }
   return Math.max(0, Math.min(100, Math.round(numeric)));
 }
-
 
 function getEnabledProviders(): ProviderKey[] {
   const config = vscode.workspace.getConfiguration('aiUsageMonitor');
@@ -277,7 +275,6 @@ function renderCombinedBar(
   bar.text = providers
     .map((provider) => formatSegment(provider, display))
     .join('   ');
-
   const usable = providers
     .map((provider) => getAlertPercent(provider.data, provider.scale))
     .filter((v): v is number => typeof v === 'number');
@@ -569,7 +566,7 @@ function appendUsageTooltip(
     return;
   }
 
-  tip.appendMarkdown(`| | Used | Resets In |\n|---|---|---|\n`);
+  tip.appendMarkdown(`| Window | Used | Resets In |\n|---|---|---|\n`);
   if (isWeeklyExhausted(data, scale) && data.sevenDay) {
     const used7d = toPercent(data.sevenDay.utilization, scale);
     const reset7d = formatReset(data.sevenDay.resetsAt);
