@@ -15,8 +15,8 @@ v1 product surface.
 - Codex source order: `codex app-server` rate limits, then local session data.
 - Copilot source order: local VS Code workspace records, then authenticated API
   rate-limit fallback.
-- Antigravity source order: a same-user local `agy` process over loopback
-  HTTP/HTTPS, then its documented endpoint fallbacks.
+- Antigravity source order: headless `agy /usage` with cached credentials, then
+  local loopback HTTP/HTTPS endpoint fallbacks when `agy` is already running.
 - Refresh interval: 60 seconds.
 - Build command: `npm run compile`.
 - Package command: `npm run package:vsix`.
@@ -26,7 +26,8 @@ The first static audit found no unused TypeScript declarations with
 confirmed dead compatibility, stale repository artifacts, and documentation that
 describes deleted products. Active provider fallbacks are runtime behavior, not
 dead code, and remain in v1, including Codex session parsing, Copilot API
-rate-limit lookup, and Antigravity endpoint fallback probing.
+rate-limit lookup, Antigravity headless quota retrieval, and local endpoint
+fallback probing.
 
 ## Repository target
 
@@ -89,15 +90,15 @@ For every function, branch, alias, and exported symbol:
 2. Delete code with no callsite, no manifest entry, and no supported external
    contract.
 3. Remove undocumented provider aliases and the user-configurable
-  `aiUsageMonitor.providerMarkers` and `aiUsageMonitor.statusBarColors` settings
-  when official-logo rendering replaces them.
+   `aiUsageMonitor.providerMarkers` and `aiUsageMonitor.statusBarColors`
+   settings when official-logo rendering replaces them.
 4. Do not remove a provider fallback only because its name contains `fallback`:
-  Codex session parsing, Copilot API rate-limit lookup, and Antigravity endpoint
-  fallback probing are active recovery paths.
+   Codex session parsing, Copilot API rate-limit lookup, and Antigravity
+   endpoint fallback probing are active recovery paths.
 5. Do not remove parser compatibility for observed provider response shapes
-  without a replacement fixture and a documented migration decision.
+   without a replacement fixture and a documented migration decision.
 6. Do not leave aliases, deprecated wrappers, commented-out implementations, or
-  TODO placeholders after a replacement is merged.
+   TODO placeholders after a replacement is merged.
 
 The supported provider configuration IDs for v1 are exactly:
 
@@ -125,13 +126,12 @@ antigravity
 
 - Replace the current user-configurable color-coded dots and emoji markers with
   Font Awesome brand assets for Claude, Codex, Copilot, and Antigravity.
-- Use the Font Awesome brand mapping that matches each provider:
-  `claude` uses `faClaude`, `codex` uses `faOpenai`, `copilot` uses `faCopilot`,
-  and `antigravity` uses `faGoogle`.
-- Render each provider logo as monochrome Font Awesome identity. Use the
-  outline SVG adaptations for local artwork and the VS Code custom icon
-  contribution for the compact status-bar surface; both must remain
-  recognizable at small size.
+- Use the Font Awesome brand mapping that matches each provider: `claude` uses
+  `faClaude`, `codex` uses `faOpenai`, `copilot` uses `faCopilot`, and
+  `antigravity` uses `faGoogle`.
+- Render each provider logo as monochrome Font Awesome identity. Use the outline
+  SVG adaptations for local artwork and the VS Code custom icon contribution for
+  the compact status-bar surface; both must remain recognizable at small size.
 - Register the status-bar and tooltip icon IDs through `contributes.icons` and
   the bundled Font Awesome brand font. Do not load provider artwork from remote
   URLs at runtime.
@@ -183,8 +183,9 @@ The release check must also confirm:
 A v1 smoke session should enable Codex, confirm a live status-bar percentage and
 reset time, then exercise the unavailable-provider state without crashing the
 extension. Claude and Copilot are checked when their local credentials/data are
-available, and Antigravity is checked when a same-user `agy` process is
-available.
+available. Antigravity is checked with `agy` installed and authenticated once;
+the extension must retrieve quota data through headless `/usage` without
+requiring a persistent CLI process.
 
 ## Phase 5 — Direct VS Code Marketplace deployment
 
@@ -206,7 +207,6 @@ release or attached VSIX is not a substitute for a Marketplace deployment.
 
 The deployment is complete only after the Marketplace listing and a clean
 installation report the same version and behavior as the release commit.
-
 
 ## Definition of done
 

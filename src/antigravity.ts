@@ -14,6 +14,7 @@ const ANTIGRAVITY_TIMEOUT_MS = 10_000;
 const ANTIGRAVITY_REQUEST_TIMEOUT_MS = 1_500;
 const ANTIGRAVITY_QUOTA_RETRY_COUNT = 3;
 const ANTIGRAVITY_QUOTA_RETRY_DELAY_MS = 250;
+const ANTIGRAVITY_HEADLESS_COMMAND = '/usage';
 const LOOPBACK_HOST = '127.0.0.1';
 
 type JsonRecord = Record<string, unknown>;
@@ -42,6 +43,8 @@ export interface AntigravityProbeOptions {
   discoverProcess?: () => Promise<AntigravityProcessInfo | null>;
   discoverPorts?: (pid: number, timeoutMs: number) => Promise<number[]>;
   request?: AntigravityRequest;
+  runHeadless?: (timeoutMs: number) => Promise<unknown>;
+  useHeadless?: boolean;
   retryDelayMs?: number;
   logger?: (message: string) => void;
 }
@@ -423,7 +426,22 @@ export function parseAntigravityQuotaSummary(payload: unknown): AgentUsage {
       }
     }
   }
+
   return createUsage(windows);
+}
+function headlessCommandData(payload: unknown): JsonRecord {
+  const root = asRecord(payload);
+  const command = asRecord(firstValue(root, ['command']));
+  const data = asRecord(firstValue(command, ['data']));
+  if (!data) {
+    throw new Error('Headless /usage returned no quota data');
+  }
+  return data;
+}
+
+export function parseAntigravityHeadlessUsage(payload: unknown): AgentUsage {
+  const usage = parseAntigravityQuotaSummary(headlessCommandData(payload));
+  return addNotes(usage, ['Source: agy headless /usage']);
 }
 
 function modelConfigRows(
@@ -668,16 +686,52 @@ async function waitForAntigravityRetry(delayMs: number): Promise<void> {
   await promise;
 }
 
-async function probeAntigravity(
-  options: AntigravityProbeOptions,
-): Promise<AgentUsage> {
-  const timeoutMs = Math.max(
+function resolveAntigravityTimeout(options: AntigravityProbeOptions): number {
+  return Math.max(
     250,
     Math.min(
       ANTIGRAVITY_TIMEOUT_MS,
       Number(options.timeoutMs ?? ANTIGRAVITY_TIMEOUT_MS),
     ),
   );
+}
+
+async function probeAntigravityHeadless(
+  options: AntigravityProbeOptions,
+): Promise<AgentUsage> {
+  const timeoutMs = resolveAntigravityTimeout(options);
+  const runHeadless = options.runHeadless ?? runAntigravityHeadless;
+  const payload = await runHeadless(timeoutMs);
+  return parseAntigravityHeadlessUsage(payload);
+}
+
+async function runAntigravityHeadless(timeoutMs: number): Promise<unknown> {
+  const printTimeoutSeconds = Math.max(1, Math.floor(timeoutMs / 1_000) - 1);
+  const output = await runCommand(
+    'agy',
+    [
+      '-p',
+      ANTIGRAVITY_HEADLESS_COMMAND,
+      '--output-format',
+      'json',
+      '--print-timeout',
+      `${printTimeoutSeconds}s`,
+    ],
+    timeoutMs,
+  );
+  try {
+    return JSON.parse(output);
+  } catch (error: unknown) {
+    throw new Error(
+      `agy headless /usage returned invalid JSON: ${errorMessage(error)}`,
+    );
+  }
+}
+
+async function probeAntigravity(
+  options: AntigravityProbeOptions,
+): Promise<AgentUsage> {
+  const timeoutMs = resolveAntigravityTimeout(options);
   const deadline = Date.now() + timeoutMs;
   const discoverProcess =
     options.discoverProcess ?? discoverRunningAntigravityProcess;
@@ -781,12 +835,37 @@ async function probeAntigravity(
 export async function getAntigravityUsage(
   options: AntigravityProbeOptions = {},
 ): Promise<AgentUsage> {
+  const hasInjectedLocalProbe = Boolean(
+    options.discoverProcess || options.discoverPorts || options.request,
+  );
+  const useHeadless = options.useHeadless !== false && !hasInjectedLocalProbe;
+  const fallbackToLocal = useHeadless && !options.runHeadless;
+
   try {
+    if (useHeadless) {
+      try {
+        return await probeAntigravityHeadless(options);
+      } catch (headlessError: unknown) {
+        if (!fallbackToLocal) {
+          throw headlessError;
+        }
+        try {
+          return await probeAntigravity(options);
+        } catch (localError: unknown) {
+          throw new Error(
+            `agy headless probe failed: ${errorMessage(headlessError)}; ` +
+              `local probe failed: ${errorMessage(localError)}`,
+          );
+        }
+      }
+    }
     return await probeAntigravity(options);
   } catch (error: unknown) {
     const detail = errorMessage(error).replace(/\s+/g, ' ').slice(0, 3_000);
     if (options.logger) {
-      options.logger(`[ai-usage-statusbar] Antigravity probe failed: ${detail}`);
+      options.logger(
+        `[ai-usage-statusbar] Antigravity probe failed: ${detail}`,
+      );
     }
     return {
       fiveHour: null,
@@ -834,9 +913,11 @@ export function formatAntigravityError(error: unknown): string {
   if (
     text.includes('401') ||
     text.includes('403') ||
-    text.includes('signed out')
+    text.includes('signed out') ||
+    text.includes('authentication required') ||
+    text.includes('not authenticated')
   ) {
-    return 'ANTIGRAVITY LOGIN REQUIRED (run `agy` to sign in)';
+    return 'ANTIGRAVITY LOGIN REQUIRED (run `agy` once to sign in)';
   }
   if (text.includes('timed out') || text.includes('timeout')) {
     return 'ANTIGRAVITY API TIMEOUT';

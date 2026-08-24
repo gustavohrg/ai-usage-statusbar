@@ -61,11 +61,13 @@ Then reload VS Code when prompted.
 | Claude      | OAuth usage API (`~/.claude/.credentials.json`)              | Supported                           |
 | Codex       | `codex app-server` (`account/rateLimits/read`) with fallback | Supported                           |
 | Copilot     | Local VS Code workspace storage and transcripts              | Supported (estimated credits/spend) |
-| Antigravity | Running local `agy` process over loopback HTTP/HTTPS         | Supported (opt-in)                  |
+| Antigravity | Headless `agy /usage` with local API fallback                | Supported (opt-in)                  |
 
-Antigravity is read-only and local-process-only. The extension does not launch
-`agy`, scrape its terminal UI, implement Google OAuth, or use the third-party
-`antigravity-usage` package. Enable it only when `agy` is already running:
+Antigravity is read-only and local-CLI-only. On each refresh, the extension
+invokes `agy -p /usage --output-format json` and exits after receiving quota
+data. Authenticate once with an interactive `agy` session so headless mode can
+reuse the cached secure credentials. The extension does not scrape the terminal
+UI, implement Google OAuth, or use the third-party `antigravity-usage` package.
 
 ```json
 {
@@ -78,9 +80,11 @@ Antigravity is read-only and local-process-only. The extension does not launch
 }
 ```
 
-The monitor first requests `RetrieveUserQuotaSummary`, then falls back to
-`GetUserStatus` and `GetCommandModelConfigs` when needed. Missing 5-hour data is
-shown as missing; it is never synthesized from weekly or model-level data.
+The monitor first requests quota data through headless `agy /usage`, then falls
+back to the local loopback API (`RetrieveUserQuotaSummary`, `GetUserStatus`, and
+`GetCommandModelConfigs`) when a persistent `agy` process is available. Missing
+5-hour data is shown as missing; it is never synthesized from weekly or
+model-level data.
 
 ## Configuration
 
@@ -122,11 +126,12 @@ provider name for accessibility.
   - Claude Code credentials file
   - Codex CLI in PATH
   - GitHub Copilot chat history in VS Code local storage
-  - Antigravity CLI `agy` already running for local quota probing
+  - Antigravity CLI `agy` installed and authenticated once
 
-Antigravity currently depends on `lsof` to discover `agy`'s loopback listeners.
-Its local HTTPS endpoint uses a self-signed certificate; certificate
-verification is disabled only for requests sent to `127.0.0.1`.
+The local API fallback uses `lsof` to discover loopback listeners when a
+persistent `agy` process is available. Its local HTTPS endpoint uses a
+self-signed certificate; certificate verification is disabled only for requests
+sent to `127.0.0.1`.
 
 ## Attribution
 

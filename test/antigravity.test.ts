@@ -36,6 +36,8 @@ type AntigravityProbeOptions = {
   discoverProcess?: () => Promise<AntigravityProcessInfo | null>;
   discoverPorts?: (pid: number, timeoutMs: number) => Promise<number[]>;
   request?: (args: AntigravityRequestArgs) => Promise<unknown>;
+  runHeadless?: (timeoutMs: number) => Promise<unknown>;
+  useHeadless?: boolean;
   retryDelayMs?: number;
   logger?: (message: string) => void;
 };
@@ -45,6 +47,7 @@ type AntigravityRuntime = {
     options?: AntigravityProbeOptions,
   ) => Promise<AgentUsage>;
   parseAntigravityCommandModelConfigs: (payload: unknown) => AgentUsage;
+  parseAntigravityHeadlessUsage: (payload: unknown) => AgentUsage;
   parseAntigravityListeningPorts: (output: string) => number[];
   parseAntigravityProcesses: (
     output: string,
@@ -60,6 +63,7 @@ const {
   ANTIGRAVITY_QUOTA_SUMMARY_PATH,
   getAntigravityUsage,
   parseAntigravityCommandModelConfigs,
+  parseAntigravityHeadlessUsage,
   parseAntigravityListeningPorts,
   parseAntigravityProcesses,
   parseAntigravityQuotaSummary,
@@ -78,6 +82,38 @@ const resetAt = '2030-01-01T00:00:00.000Z';
 function summaryPayload(groups: FixtureGroup[]): FixtureRecord {
   return { response: { groups } };
 }
+
+function headlessPayload(groups: unknown[]): FixtureRecord {
+  return {
+    status: 'SUCCESS',
+    command: {
+      name: 'usage',
+      data: { groups },
+    },
+  };
+}
+
+test('parses headless agy usage command data', () => {
+  const usage = parseAntigravityHeadlessUsage(
+    headlessPayload([
+      {
+        name: 'Gemini Models',
+        buckets: [
+          {
+            id: 'gemini-weekly',
+            name: 'Weekly Limit Remaining',
+            window: 'weekly',
+            remaining_fraction: 0.75,
+            reset_time: resetAt,
+          },
+        ],
+      },
+    ]),
+  );
+
+  assert.equal(usage.sevenDay?.utilization, 25);
+  assert.match(usage.meta.tooltipNotes[0], /headless/);
+});
 
 function bucket(overrides: FixtureRecord = {}): FixtureRecord {
   const hasExplicitRemaining =
@@ -338,6 +374,30 @@ test('detects same-user agy processes and loopback ports', () => {
   );
 });
 
+test('uses headless agy usage without a persistent local process', async () => {
+  const usage = await getAntigravityUsage({
+    runHeadless: async () =>
+      headlessPayload([
+        {
+          name: 'Claude and GPT models',
+          buckets: [
+            {
+              id: 'third-party-weekly',
+              name: 'Weekly Limit Remaining',
+              window: 'weekly',
+              remaining_fraction: 0.6,
+              reset_time: resetAt,
+            },
+          ],
+        },
+      ]),
+    logger: () => {},
+  });
+
+  assert.equal(usage.sevenDay?.utilization, 40);
+  assert.match(usage.meta.tooltipNotes[0], /headless/);
+});
+
 test('returns a friendly unavailable state without a running agy process', async () => {
   const usage = await getAntigravityUsage({
     discoverProcess: async () => null,
@@ -416,10 +476,7 @@ test('moves past timed-out endpoints without retrying the same request', async (
     discoverPorts: async () => [45123],
     request: async ({ scheme, path }) => {
       attempts.push({ scheme, path });
-      if (
-        scheme === 'https' &&
-        path === ANTIGRAVITY_QUOTA_SUMMARY_PATH
-      ) {
+      if (scheme === 'https' && path === ANTIGRAVITY_QUOTA_SUMMARY_PATH) {
         throw new Error('Antigravity request timed out');
       }
       if (scheme === 'http' && path === ANTIGRAVITY_QUOTA_SUMMARY_PATH) {
