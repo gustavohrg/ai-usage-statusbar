@@ -2,6 +2,9 @@
 import {
   AgentUsage,
   CopilotUsageOptions,
+  UsageResult,
+  UsageWindow,
+  getAntigravityUsage,
   getClaudeUsage,
   getCodexUsage,
   getCopilotUsage,
@@ -10,7 +13,7 @@ import {
 let usageBar: vscode.StatusBarItem;
 let timer: ReturnType<typeof setInterval>;
 
-type ProviderKey = 'claude' | 'codex' | 'copilot';
+type ProviderKey = 'claude' | 'codex' | 'copilot' | 'antigravity';
 type UsageScale = 'ratio' | 'percent';
 
 interface ProviderViewModel {
@@ -43,6 +46,7 @@ const DEFAULT_PROVIDER_MARKERS: Record<ProviderKey, string> = {
   claude: '🟠',
   codex: '🔵',
   copilot: '🟩',
+  antigravity: '🟣',
 };
 
 export function activate(context: vscode.ExtensionContext) {
@@ -87,6 +91,15 @@ async function doRefresh() {
           label: 'G',
           scale: 'percent',
           data: await getCopilotUsage(copilotConfig),
+        };
+      }
+      if (key === 'antigravity') {
+        return {
+          key,
+          name: 'Antigravity',
+          label: 'A',
+          scale: 'percent',
+          data: await getAntigravityUsage(),
         };
       }
       return {
@@ -162,6 +175,10 @@ function getDisplayConfig(): DisplayConfig {
     copilot: normalizeMarker(
       markerConfig?.copilot,
       DEFAULT_PROVIDER_MARKERS.copilot,
+    ),
+    antigravity: normalizeMarker(
+      markerConfig?.antigravity,
+      DEFAULT_PROVIDER_MARKERS.antigravity,
     ),
   };
 
@@ -256,6 +273,9 @@ function normalizeProviderToken(token: string): ProviderKey | null {
   ) {
     return 'copilot';
   }
+  if (token === 'antigravity' || token === 'agy') {
+    return 'antigravity';
+  }
   return null;
 }
 
@@ -335,6 +355,62 @@ function getSevenDayPercent(
   return toPercent(data.sevenDay.utilization, scale);
 }
 
+function getMostConstrainedWindow(
+  data: AgentUsage,
+): { window: UsageResult; kind: UsageWindow['kind'] } | null {
+  if (data.windows?.length) {
+    const known = data.windows.filter((window) => window.usageKnown !== false);
+    let selected: UsageWindow | undefined;
+    for (const candidate of known) {
+      if (!selected || candidate.utilization > selected.utilization) {
+        selected = candidate;
+      }
+    }
+    if (selected) {
+      return {
+        window: {
+          utilization: selected.utilization,
+          resetsAt: selected.resetsAt,
+        },
+        kind: selected.kind,
+      };
+    }
+    return null;
+  }
+
+  if (data.fiveHour) {
+    return { window: data.fiveHour, kind: 'fiveHour' };
+  }
+  if (data.sevenDay) {
+    return { window: data.sevenDay, kind: 'sevenDay' };
+  }
+  return null;
+}
+
+function getDetailedUsageTooltip(
+  tip: vscode.MarkdownString,
+  data: AgentUsage,
+  scale: UsageScale,
+) {
+  tip.appendMarkdown(`| Window | Used | Resets In |\n|---|---|---|\n`);
+  for (const window of data.windows ?? []) {
+    const used =
+      window.usageKnown === false
+        ? 'unknown'
+        : `${toPercent(window.utilization, scale)}%`;
+    const reset = formatReset(window.resetsAt);
+    tip.appendMarkdown(
+      `| ${window.label} | **${used}** | ${reset || '--'} |\n`,
+    );
+  }
+  if (data.meta?.tooltipNotes?.length) {
+    tip.appendMarkdown('\n');
+    for (const note of data.meta.tooltipNotes) {
+      tip.appendMarkdown(`- ${note}\n`);
+    }
+  }
+}
+
 function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
   // API fallback: use rate limit percent
   if (data.displayHint && data.raw) {
@@ -342,6 +418,10 @@ function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
   }
   if (data.error) {
     return null;
+  }
+  if (data.windows?.length) {
+    const compact = getMostConstrainedWindow(data);
+    return compact ? toPercent(compact.window.utilization, scale) : null;
   }
   if (isWeeklyExhausted(data, scale)) {
     return 100;
@@ -363,6 +443,21 @@ function formatSegment(
 
   if (data.error) {
     return `${prefix} --`;
+  }
+
+  const compact = data.windows?.length ? getMostConstrainedWindow(data) : null;
+  if (data.windows?.length) {
+    if (!compact) {
+      return `${prefix} --`;
+    }
+    const used = toPercent(compact.window.utilization, scale);
+    const reset = formatReset(compact.window.resetsAt);
+    const showReset = !data.meta?.hideReset && Boolean(reset);
+    const segmentSuffix = data.meta?.segmentSuffix
+      ? ` ${data.meta.segmentSuffix}`
+      : '';
+    const windowLabel = compact.kind === 'sevenDay' ? ' 7d' : '';
+    return `${prefix}${windowLabel} ${used}%${showReset ? ` ${reset}` : ''}${segmentSuffix}`;
   }
 
   if (isWeeklyExhausted(data, scale)) {
@@ -477,8 +572,16 @@ function appendUsageTooltip(
     return;
   }
 
+  if (data.windows?.length) {
+    getDetailedUsageTooltip(tip, data, scale);
+    return;
+  }
+
   if (data.error || (!data.fiveHour && !data.sevenDay)) {
     tip.appendMarkdown(`- ${data.error ?? 'No data available'}\n`);
+    for (const note of data.meta?.tooltipNotes ?? []) {
+      tip.appendMarkdown(`- ${note}\n`);
+    }
     return;
   }
 

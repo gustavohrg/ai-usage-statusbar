@@ -1,7 +1,7 @@
 # AI Usage Pulse GH 2026
 
-Real-time Claude, Codex, and Copilot usage monitoring directly in the VS Code
-status bar.
+Real-time Claude, Codex, Copilot, and optional Antigravity usage monitoring
+directly in the VS Code status bar.
 
 This repository is an independent maintained version focused only on the VS Code
 extension.
@@ -43,20 +43,43 @@ Then reload VS Code when prompted.
 
 ## Features
 
-- Single status bar indicator with Claude, Codex, and Copilot usage summary
+- Single status bar indicator with Claude, Codex, Copilot, and optional
+  Antigravity usage summary
 - Provider-level threshold warnings (warning and critical badges per provider)
 - Tooltip breakdown for 5-hour and 7-day windows
+- Antigravity tooltip details for Gemini, Claude/GPT, account, plan, and
+  fallback data
 - 60-second auto-refresh
 - Configurable provider markers and display options
 - Copilot estimated spend and token volume from local VS Code chat history
 
 ## Provider Support
 
-| Provider | Data source                                                  | Status                              |
-| -------- | ------------------------------------------------------------ | ----------------------------------- |
-| Claude   | OAuth usage API (`~/.claude/.credentials.json`)              | Supported                           |
-| Codex    | `codex app-server` (`account/rateLimits/read`) with fallback | Supported                           |
-| Copilot  | Local VS Code workspace storage and transcripts              | Supported (estimated credits/spend) |
+| Provider    | Data source                                                  | Status                              |
+| ----------- | ------------------------------------------------------------ | ----------------------------------- |
+| Claude      | OAuth usage API (`~/.claude/.credentials.json`)              | Supported                           |
+| Codex       | `codex app-server` (`account/rateLimits/read`) with fallback | Supported                           |
+| Copilot     | Local VS Code workspace storage and transcripts              | Supported (estimated credits/spend) |
+| Antigravity | Running local `agy` process over loopback HTTP/HTTPS         | Supported (opt-in)                  |
+
+Antigravity is read-only and local-process-only. The extension does not launch
+`agy`, scrape its terminal UI, implement Google OAuth, or use the third-party
+`antigravity-usage` package. Enable it only when `agy` is already running:
+
+```json
+{
+  "aiUsageMonitor.enabledProviders": [
+    "claude",
+    "codex",
+    "copilot",
+    "antigravity"
+  ]
+}
+```
+
+The monitor first requests `RetrieveUserQuotaSummary`, then falls back to
+`GetUserStatus` and `GetCommandModelConfigs` when needed. Missing 5-hour data is
+shown as missing; it is never synthesized from weekly or model-level data.
 
 ## Configuration
 
@@ -66,13 +89,19 @@ Example:
 
 ```json
 {
-  "aiUsageMonitor.enabledProviders": ["claude", "codex", "copilot"],
+  "aiUsageMonitor.enabledProviders": [
+    "claude",
+    "codex",
+    "copilot",
+    "antigravity"
+  ],
   "aiUsageMonitor.enableThresholdColors": true,
   "aiUsageMonitor.showProviderLetter": true,
   "aiUsageMonitor.providerMarkers": {
     "claude": "🟠",
     "codex": "🔵",
-    "copilot": "🟢"
+    "copilot": "🟢",
+    "antigravity": "🟣"
   },
   "aiUsageMonitor.copilotWindowMode": "currentMonth",
   "aiUsageMonitor.copilotLookbackDays": 30,
@@ -100,6 +129,11 @@ Example:
   - Claude Code credentials file
   - Codex CLI in PATH
   - GitHub Copilot chat history in VS Code local storage
+  - Antigravity CLI `agy` already running for local quota probing
+
+Antigravity currently depends on `lsof` to discover `agy`'s loopback listeners.
+Its local HTTPS endpoint uses a self-signed certificate; certificate
+verification is disabled only for requests sent to `127.0.0.1`.
 
 ## Attribution
 

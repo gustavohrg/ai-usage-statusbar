@@ -1,7 +1,7 @@
 {
   "name": "ai-usage-statusbar-gustavohrg-2026",
   "displayName": "AI Usage Pulse GH 2026",
-  "description": "VS Code status bar monitor for Claude, Codex, and Copilot usage",
+  "description": "VS Code status bar monitor for Claude, Codex, Copilot, and optional Antigravity usage",
   "icon": "icon.png",
   "version": "0.2.14",
   "publisher": "gustavohrg",
@@ -29,6 +29,8 @@
     "claude",
     "codex",
     "copilot",
+    "antigravity",
+    "agy",
     "tokens",
     "monitoring"
   ],
@@ -47,7 +49,8 @@
             "enum": [
               "claude",
               "codex",
-              "copilot"
+              "copilot",
+              "antigravity"
             ]
           },
           "uniqueItems": true,
@@ -56,7 +59,7 @@
             "codex",
             "copilot"
           ],
-          "description": "Providers to enable in status bar and refresh cycle. Set empty array to disable all providers."
+          "description": "Providers to enable in status bar and refresh cycle. Set empty array to disable all providers. Antigravity is opt-in and requires a running agy process."
         },
         "aiUsageMonitor.enableThresholdColors": {
           "type": "boolean",
@@ -66,16 +69,17 @@
         "aiUsageMonitor.showProviderLetter": {
           "type": "boolean",
           "default": true,
-          "description": "Show provider letter (C/O/G) next to each provider marker in the status bar."
+          "description": "Show provider letter (C/O/G/A) next to each provider marker in the status bar."
         },
         "aiUsageMonitor.providerMarkers": {
           "type": "object",
           "default": {
             "claude": "🟠",
             "codex": "🔵",
-            "copilot": "🟢"
+            "copilot": "🟢",
+            "antigravity": "🟣"
           },
-          "description": "Provider-to-marker mapping used in the status bar. Example: { \"claude\": \"🟠\", \"codex\": \"🔵\", \"copilot\": \"🟩\" }"
+          "description": "Provider-to-marker mapping used in the status bar. Example: { \"claude\": \"🟠\", \"codex\": \"🔵\", \"copilot\": \"🟩\", \"antigravity\": \"🟣\" }"
         },
         "aiUsageMonitor.copilotLookbackDays": {
           "type": "number",
@@ -141,6 +145,7 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
+    "test": "npm run compile && tsc -p ./test/tsconfig.json && node --test out-test/antigravity.test.js",
     "watch": "tsc -watch -p ./",
     "package:vsix": "npm run compile && npx @vscode/vsce package"
   },

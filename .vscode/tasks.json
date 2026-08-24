@@ -2,23 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npm: compile",
-      "type": "npm",
-      "script": "compile",
-      "group": {
-        "kind": "build",
-        "isDefault": true
+      "label": "Run Extension (Verified)",
+      "type": "shell",
+      "command": "npm test && code --new-window --disable-extensions --extensionDevelopmentPath=\"${workspaceFolder}\" \"${workspaceFolder}\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": ["$tsc"]
-    },
-    {
-      "label": "npm: watch",
-      "type": "npm",
-      "script": "watch",
-      "detail": "Builds in watch mode for local extension debugging (use with F5 / Run Extension).",
-      "isBackground": true,
-      "problemMatcher": ["$tsc-watch"],
-      "group": "build"
+      "detail": "Compile, test, and open the local Extension Development Host.",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
     }
   ]
 }
