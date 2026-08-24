@@ -5,34 +5,7 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "--disable-extensions"
-      ],
-      "env": {
-        "NODE_OPTIONS": "--no-deprecation --no-warnings",
-        "NODE_NO_WARNINGS": "1"
-      },
-      "outFiles": ["${workspaceFolder}/out/**/*.js"]
-    },
-    {
-      "name": "Run Extension (No Compile)",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "--disable-extensions"
-      ],
-      "env": {
-        "NODE_OPTIONS": "--no-deprecation --no-warnings",
-        "NODE_NO_WARNINGS": "1"
-      },
-      "outFiles": ["${workspaceFolder}/out/**/*.js"]
-    },
-    {
-      "name": "Run Extension (Watch)",
-      "type": "extensionHost",
-      "request": "launch",
+      "preLaunchTask": "npm: compile",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--disable-extensions"

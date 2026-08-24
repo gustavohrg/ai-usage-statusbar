@@ -10,4 +10,5 @@ memory/**
 .vscode/**
 .github/**
 .gitignore
+AGENTS.md
 *.vsix
