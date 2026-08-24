@@ -5,6 +5,27 @@ import * as os from 'os';
 import * as path from 'path';
 import * as readline from 'readline';
 import * as vscode from 'vscode';
+import {
+  getAntigravityUsage,
+  parseAntigravityCommandModelConfigs,
+  parseAntigravityListeningPorts,
+  parseAntigravityProcesses,
+  parseAntigravityQuotaSummary,
+  parseAntigravityTimestamp,
+  parseAntigravityUserStatus,
+  requestAntigravityJson,
+} from './antigravity';
+
+export {
+  getAntigravityUsage,
+  parseAntigravityCommandModelConfigs,
+  parseAntigravityListeningPorts,
+  parseAntigravityProcesses,
+  parseAntigravityQuotaSummary,
+  parseAntigravityTimestamp,
+  parseAntigravityUserStatus,
+  requestAntigravityJson,
+};
 
 // App-local provider adapter for VS Code extension runtime.
 
@@ -103,14 +124,22 @@ const MODEL_ALIASES: Record<string, string> = {
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+export interface UsageWindow {
+  label: string;
+  utilization: number;
+  resetsAt: string;
+  kind: 'fiveHour' | 'sevenDay' | 'other';
+  usageKnown?: boolean;
+}
+
 export interface UsageResult {
   utilization: number;
   resetsAt: string;
 }
-
 export interface AgentUsage {
   fiveHour: UsageResult | null;
   sevenDay: UsageResult | null;
+  windows?: UsageWindow[];
   error?: string;
   displayHint?: string;
   raw?: {
