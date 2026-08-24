@@ -11,11 +11,12 @@ v1 product surface.
 
 - Package version: `0.2.14`.
 - Runtime entrypoint: `src/extension.ts`.
-- Provider/runtime adapter: `src/provider-adapter.ts`.
-- Supported providers: Claude, Codex, and Copilot.
+- Supported providers: Claude, Codex, Copilot, and opt-in Antigravity.
 - Codex source order: `codex app-server` rate limits, then local session data.
 - Copilot source order: local VS Code workspace records, then authenticated API
   rate-limit fallback.
+- Antigravity source order: a same-user local `agy` process over loopback
+  HTTP/HTTPS, then its documented endpoint fallbacks.
 - Refresh interval: 60 seconds.
 - Build command: `npm run compile`.
 - Package command: `npm run package:vsix`.
@@ -24,7 +25,8 @@ The first static audit found no unused TypeScript declarations with
 `--noUnusedLocals --noUnusedParameters`. The cleanup therefore removes only
 confirmed dead compatibility, stale repository artifacts, and documentation that
 describes deleted products. Active provider fallbacks are runtime behavior, not
-dead code, and remain in v1.
+dead code, and remain in v1, including Codex session parsing, Copilot API
+rate-limit lookup, and Antigravity endpoint fallback probing.
 
 ## Repository target
 
@@ -75,16 +77,16 @@ For every function, branch, alias, and exported symbol:
    contracts.
 2. Delete code with no callsite, no manifest entry, and no supported external
    contract.
-3. Remove undocumented provider aliases and the color-dot
-   `aiUsageMonitor.providerMarkers` setting when official-logo rendering
-   replaces it.
+3. Remove undocumented provider aliases and the user-configurable
+  `aiUsageMonitor.providerMarkers` setting when official-logo rendering replaces
+  it.
 4. Do not remove a provider fallback only because its name contains `fallback`:
-   Codex session parsing and Copilot API rate-limit lookup are active recovery
-   paths.
+  Codex session parsing, Copilot API rate-limit lookup, and Antigravity endpoint
+  fallback probing are active recovery paths.
 5. Do not remove parser compatibility for observed provider response shapes
-   without a replacement fixture and a documented migration decision.
+  without a replacement fixture and a documented migration decision.
 6. Do not leave aliases, deprecated wrappers, commented-out implementations, or
-   TODO placeholders after a replacement is merged.
+  TODO placeholders after a replacement is merged.
 
 The supported provider configuration IDs for v1 are exactly:
 
@@ -92,6 +94,7 @@ The supported provider configuration IDs for v1 are exactly:
 claude
 codex
 copilot
+antigravity
 ```
 
 ## Phase 3 — Runtime hardening
@@ -110,18 +113,22 @@ copilot
 ### Provider branding and icons
 
 - Replace the current user-configurable color-coded dots and emoji markers with
-  the official or brand-approved logos for Claude, Codex, and Copilot.
+  Font Awesome brand assets for Claude, Codex, Copilot, and Antigravity.
+- Use the Font Awesome brand mapping that matches each provider's parent brand:
+  `claude` uses `faClaude`, `codex` uses `faOpenai`, `copilot` uses `faGithub`,
+  and `antigravity` uses `faGoogle`.
 - Render each provider logo in a consistent outline treatment: monochrome
   stroke/line artwork on a transparent background, with no filled color dots and
   no dependency on emoji fonts. The outline must remain recognizable at compact
   status-bar size.
-- Prefer bundled local SVG/PNG assets or a stable VS Code-supported icon
-  mechanism; do not load provider artwork from remote URLs at runtime.
+- Bundle only the required local SVG assets; do not load provider artwork from
+  remote URLs at runtime.
 - Remove user-configurable marker symbols once the logo contract is in place.
   Provider identity must not depend on arbitrary color choices or emoji fonts.
 - Preserve an accessible textual provider name in the segment or tooltip when
   the status-bar surface cannot render a custom image asset.
-- Verify logo licensing/attribution and light/dark theme legibility before v1.
+- Record Font Awesome attribution and verify logo licensing plus light/dark
+  theme legibility before v1.
 
 The icon change must update `package.json`, README examples, tooltip rendering,
 and the VSIX asset allowlist together. Outline assets and their fallback must
@@ -152,8 +159,9 @@ The release check must also confirm:
   maintainer docs, caches, or generated analysis output;
 - Codex app-server-first behavior still compiles and the session fallback
   remains reachable;
-- Claude and Copilot paths still compile and remain independently renderable.
-- status-bar segments and tooltips use the approved provider outline assets,
+- Claude, Codex, Copilot, and Antigravity paths still compile and remain
+  independently renderable;
+- status-bar segments and tooltips use the approved Font Awesome outline assets,
   with a readable text fallback when the VS Code surface cannot render custom
   artwork;
 - the removed color-dot marker setting is absent from the v1 settings schema and
@@ -162,6 +170,7 @@ The release check must also confirm:
 A v1 smoke session should enable Codex, confirm a live status-bar percentage and
 reset time, then exercise the unavailable-provider state without crashing the
 extension. Claude and Copilot are checked when their local credentials/data are
+available, and Antigravity is checked when a same-user `agy` process is
 available.
 
 ## Phase 5 — Direct VS Code Marketplace deployment
@@ -201,8 +210,9 @@ v1 is ready when:
 - README, changelog, package metadata, and `docs/` agree on scope and commands;
 - Codex daily monitoring behavior is unchanged in the supported app-server and
   session-data scenarios.
-- provider logos use the approved outline treatment, are bundled,
-  license-reviewed, and render legibly in both light and dark VS Code themes;
+- provider logos use the approved Font Awesome outline treatment, are bundled,
+  attributed, license-reviewed, and render legibly in both light and dark VS
+  Code themes;
 - the v1 package is published directly to the VS Code Marketplace;
 - a clean VS Code profile can install the published version and exercise the
   Codex monitoring path;
@@ -211,6 +221,7 @@ v1 is ready when:
 
 - Reintroducing or maintaining the Electron tray application.
 - Adding a remote backend or telemetry pipeline.
-- Adding a new provider as part of the cleanup.
+- Adding any provider beyond Claude, Codex, Copilot, and Antigravity as part of
+  the cleanup.
 - Replacing the current Codex data sources without evidence and fixtures.
 - Large refactors that do not remove a confirmed maintenance risk.
