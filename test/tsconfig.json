@@ -2,9 +2,8 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "../out-test",
-    "types": ["node"]
+    "types": ["node"],
+    "noEmit": true
   },
-  "include": ["**/*.ts"],
-  "exclude": ["../node_modules", "../out", "../out-test"]
+  "include": ["**/*.ts"]
 }

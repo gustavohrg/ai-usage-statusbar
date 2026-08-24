@@ -145,7 +145,7 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "test": "npm run compile && tsc -p ./test/tsconfig.json && node --test out-test/antigravity.test.js",
+    "test": "npm run compile && node --test test/antigravity.test.ts",
     "watch": "tsc -watch -p ./",
     "package:vsix": "npm run compile && npx @vscode/vsce package"
   },
