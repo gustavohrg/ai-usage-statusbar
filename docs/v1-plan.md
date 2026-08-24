@@ -109,19 +109,23 @@ copilot
 
 ### Provider branding and icons
 
-- Replace the current color-coded dot/emoji markers with official or
-  brand-approved logos for Claude, Codex, and Copilot.
-- Prefer bundled local assets or a stable VS Code-supported icon mechanism; do
-  not load provider artwork from remote URLs at runtime.
+- Replace the current user-configurable color-coded dots and emoji markers with
+  the official or brand-approved logos for Claude, Codex, and Copilot.
+- Render each provider logo in a consistent outline treatment: monochrome
+  stroke/line artwork on a transparent background, with no filled color dots and
+  no dependency on emoji fonts. The outline must remain recognizable at compact
+  status-bar size.
+- Prefer bundled local SVG/PNG assets or a stable VS Code-supported icon
+  mechanism; do not load provider artwork from remote URLs at runtime.
 - Remove user-configurable marker symbols once the logo contract is in place.
-  Provider identity should not depend on arbitrary color choices or emoji fonts.
+  Provider identity must not depend on arbitrary color choices or emoji fonts.
 - Preserve an accessible textual provider name in the segment or tooltip when
   the status-bar surface cannot render a custom image asset.
 - Verify logo licensing/attribution and light/dark theme legibility before v1.
 
 The icon change must update `package.json`, README examples, tooltip rendering,
-and the VSIX asset allowlist together. A logo fallback must remain visually
-distinct without relying on color alone.
+and the VSIX asset allowlist together. Outline assets and their fallback must
+remain visually distinct without relying on color alone.
 
 Potential structural follow-up after the cleanup: split provider adapters and
 rendering helpers into smaller modules only when the split reduces coupling and
@@ -149,7 +153,7 @@ The release check must also confirm:
 - Codex app-server-first behavior still compiles and the session fallback
   remains reachable;
 - Claude and Copilot paths still compile and remain independently renderable.
-- status-bar segments and tooltips use the approved provider identity assets,
+- status-bar segments and tooltips use the approved provider outline assets,
   with a readable text fallback when the VS Code surface cannot render custom
   artwork;
 - the removed color-dot marker setting is absent from the v1 settings schema and
@@ -197,8 +201,8 @@ v1 is ready when:
 - README, changelog, package metadata, and `docs/` agree on scope and commands;
 - Codex daily monitoring behavior is unchanged in the supported app-server and
   session-data scenarios.
-- provider logos are bundled, license-reviewed, and render legibly in both light
-  and dark VS Code themes;
+- provider logos use the approved outline treatment, are bundled,
+  license-reviewed, and render legibly in both light and dark VS Code themes;
 - the v1 package is published directly to the VS Code Marketplace;
 - a clean VS Code profile can install the published version and exercise the
   Codex monitoring path;
