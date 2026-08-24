@@ -12,6 +12,7 @@ export { getCopilotUsage } from './copilot-provider';
 export {
   getAntigravityUsage,
   parseAntigravityCommandModelConfigs,
+  parseAntigravityHeadlessUsage,
   parseAntigravityListeningPorts,
   parseAntigravityProcesses,
   parseAntigravityQuotaSummary,
