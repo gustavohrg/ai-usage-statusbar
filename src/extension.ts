@@ -19,34 +19,31 @@ type UsageScale = 'ratio' | 'percent';
 interface ProviderViewModel {
   key: ProviderKey;
   name: string;
-  label: string;
   scale: UsageScale;
   data: AgentUsage;
 }
 
 interface DisplayConfig {
   enableThresholdColors: boolean;
-  showProviderLetter: boolean;
-  providerMarkers: Record<ProviderKey, string>;
   weeklyExhaustedDisplay: 'percent' | 'remainingDays';
   warningThreshold: number;
   criticalThreshold: number;
-  statusColors: {
-    disabled: string;
-    warning: string;
-    critical: string;
-  };
 }
 
 type CopilotWindowMode = 'lookbackDays' | 'currentMonth';
 type ProviderAlertLevel = 'none' | 'warning' | 'critical';
 
 const DEFAULT_PROVIDERS: ProviderKey[] = ['claude', 'codex', 'copilot'];
-const DEFAULT_PROVIDER_MARKERS: Record<ProviderKey, string> = {
-  claude: '🟠',
-  codex: '🔵',
-  copilot: '🟩',
-  antigravity: '🟣',
+const PROVIDER_ICON_MARKUP: Record<ProviderKey, string> = {
+  claude: '$(ai-usage-claude)',
+  codex: '$(ai-usage-codex)',
+  copilot: '$(ai-usage-copilot)',
+  antigravity: '$(ai-usage-antigravity)',
+};
+const STATUS_BAR_COLORS = {
+  disabled: new vscode.ThemeColor('statusBarItem.foreground'),
+  warning: new vscode.ThemeColor('statusBarItem.warningForeground'),
+  critical: new vscode.ThemeColor('statusBarItem.errorForeground'),
 };
 
 export function activate(context: vscode.ExtensionContext) {
@@ -75,44 +72,67 @@ async function doRefresh() {
 
   const providers = await Promise.all(
     enabledProviders.map(async (key): Promise<ProviderViewModel> => {
-      if (key === 'claude') {
+      const name = getProviderName(key);
+      const scale = getProviderScale(key);
+      try {
         return {
           key,
-          name: 'Claude',
-          label: 'C',
-          scale: 'ratio',
-          data: await getClaudeUsage(),
+          name,
+          scale,
+          data: await getProviderData(key, copilotConfig),
         };
-      }
-      if (key === 'copilot') {
+      } catch {
         return {
           key,
-          name: 'Copilot',
-          label: 'G',
-          scale: 'percent',
-          data: await getCopilotUsage(copilotConfig),
+          name,
+          scale,
+          data: createUnavailableUsage(name),
         };
       }
-      if (key === 'antigravity') {
-        return {
-          key,
-          name: 'Antigravity',
-          label: 'A',
-          scale: 'percent',
-          data: await getAntigravityUsage(),
-        };
-      }
-      return {
-        key,
-        name: 'Codex',
-        label: 'O',
-        scale: 'percent',
-        data: await getCodexUsage(),
-      };
     }),
   );
 
   renderCombinedBar(usageBar, providers, displayConfig);
+}
+function getProviderName(key: ProviderKey): string {
+  if (key === 'claude') {
+    return 'Claude';
+  }
+  if (key === 'codex') {
+    return 'Codex';
+  }
+  if (key === 'copilot') {
+    return 'Copilot';
+  }
+  return 'Antigravity';
+}
+
+function getProviderScale(key: ProviderKey): UsageScale {
+  return key === 'claude' ? 'ratio' : 'percent';
+}
+
+async function getProviderData(
+  key: ProviderKey,
+  copilotConfig: CopilotUsageOptions,
+): Promise<AgentUsage> {
+  if (key === 'claude') {
+    return getClaudeUsage();
+  }
+  if (key === 'copilot') {
+    return getCopilotUsage(copilotConfig);
+  }
+  if (key === 'antigravity') {
+    return getAntigravityUsage();
+  }
+  return getCodexUsage();
+}
+
+function createUnavailableUsage(name: string): AgentUsage {
+  return {
+    fiveHour: null,
+    sevenDay: null,
+    error: `${name} unavailable`,
+  };
 }
 
 function getCopilotConfig(): CopilotUsageOptions {
@@ -157,31 +177,9 @@ function getDisplayConfig(): DisplayConfig {
     'enableThresholdColors',
     true,
   );
-  const showProviderLetter = config.get<boolean>('showProviderLetter', true);
   const weeklyExhaustedDisplay = normalizeWeeklyExhaustedDisplay(
     config.get<string>('weeklyExhaustedDisplay', 'percent'),
   );
-
-  const markerConfig = config.get<Record<string, unknown>>(
-    'providerMarkers',
-    {},
-  );
-  const providerMarkers: Record<ProviderKey, string> = {
-    claude: normalizeMarker(
-      markerConfig?.claude,
-      DEFAULT_PROVIDER_MARKERS.claude,
-    ),
-    codex: normalizeMarker(markerConfig?.codex, DEFAULT_PROVIDER_MARKERS.codex),
-    copilot: normalizeMarker(
-      markerConfig?.copilot,
-      DEFAULT_PROVIDER_MARKERS.copilot,
-    ),
-    antigravity: normalizeMarker(
-      markerConfig?.antigravity,
-      DEFAULT_PROVIDER_MARKERS.antigravity,
-    ),
-  };
-
   const warningThreshold = clampPercent(
     config.get<number>('warningThreshold', 70),
   );
@@ -190,24 +188,11 @@ function getDisplayConfig(): DisplayConfig {
     clampPercent(config.get<number>('criticalThreshold', 85)),
   );
 
-  const colorConfig = config.get<Record<string, unknown>>(
-    'statusBarColors',
-    {},
-  );
-  const statusColors = {
-    disabled: normalizeColor(colorConfig?.disabled, '#6e7681'),
-    warning: normalizeColor(colorConfig?.warning, '#d29922'),
-    critical: normalizeColor(colorConfig?.critical, '#f85149'),
-  };
-
   return {
     enableThresholdColors,
-    showProviderLetter,
-    providerMarkers,
     weeklyExhaustedDisplay,
     warningThreshold,
     criticalThreshold,
-    statusColors,
   };
 }
 
@@ -220,9 +205,6 @@ function normalizeWeeklyExhaustedDisplay(
   return normalized === 'remainingdays' ? 'remainingDays' : 'percent';
 }
 
-function normalizeMarker(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
-}
 
 function clampPercent(value: unknown): number {
   const numeric = Number(value);
@@ -232,9 +214,6 @@ function clampPercent(value: unknown): number {
   return Math.max(0, Math.min(100, Math.round(numeric)));
 }
 
-function normalizeColor(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
-}
 
 function getEnabledProviders(): ProviderKey[] {
   const config = vscode.workspace.getConfiguration('aiUsageMonitor');
@@ -259,21 +238,16 @@ function normalizeProviderList(input: string[]): ProviderKey[] {
 }
 
 function normalizeProviderToken(token: string): ProviderKey | null {
-  if (token === 'claude' || token === 'anthropic' || token === 'c') {
+  if (token === 'claude') {
     return 'claude';
   }
-  if (token === 'codex' || token === 'openai' || token === 'o') {
+  if (token === 'codex') {
     return 'codex';
   }
-  if (
-    token === 'copilot' ||
-    token === 'github' ||
-    token === 'ghcp' ||
-    token === 'g'
-  ) {
+  if (token === 'copilot') {
     return 'copilot';
   }
-  if (token === 'antigravity' || token === 'agy') {
+  if (token === 'antigravity') {
     return 'antigravity';
   }
   return null;
@@ -290,7 +264,7 @@ function renderNoProvidersBar(
   display: DisplayConfig,
 ) {
   bar.text = 'AI usage disabled';
-  bar.color = display.statusColors.disabled;
+  bar.color = STATUS_BAR_COLORS.disabled;
   bar.tooltip =
     'No providers are enabled. Configure aiUsageMonitor.enabledProviders.';
 }
@@ -308,29 +282,36 @@ function renderCombinedBar(
     .map((provider) => getAlertPercent(provider.data, provider.scale))
     .filter((v): v is number => typeof v === 'number');
   if (usable.length === 0) {
-    bar.color = display.statusColors.disabled;
+    bar.color = STATUS_BAR_COLORS.disabled;
   } else if (!display.enableThresholdColors) {
     bar.color = undefined;
   } else if (usable.length === 1) {
     const used = usable[0] ?? 0;
     bar.color =
       used >= display.criticalThreshold
-        ? display.statusColors.critical
+        ? STATUS_BAR_COLORS.critical
         : used >= display.warningThreshold
-          ? display.statusColors.warning
+          ? STATUS_BAR_COLORS.warning
           : undefined;
   } else {
-    // Keep multi-provider bar neutral; segment badges indicate per-provider alert state.
+    // Keep multi-provider bar neutral; text badges indicate per-provider alert state.
     bar.color = undefined;
   }
 
   const tip = new vscode.MarkdownString();
-  tip.isTrusted = true;
+  tip.isTrusted = false;
+  tip.supportThemeIcons = true;
   providers.forEach((provider, index) => {
     if (index > 0) {
       tip.appendMarkdown('\n');
     }
-    appendUsageTooltip(tip, provider.name, provider.data, provider.scale);
+    appendUsageTooltip(
+      tip,
+      provider.key,
+      provider.name,
+      provider.data,
+      provider.scale,
+    );
   });
   bar.tooltip = tip;
 }
@@ -442,7 +423,7 @@ function formatSegment(
   }
 
   if (data.error) {
-    return `${prefix} --`;
+    return `${prefix} unavailable`;
   }
 
   const compact = data.windows?.length ? getMostConstrainedWindow(data) : null;
@@ -501,12 +482,7 @@ function formatProviderPrefix(
   provider: ProviderViewModel,
   display: DisplayConfig,
 ): string {
-  const marker =
-    display.providerMarkers[provider.key] ??
-    DEFAULT_PROVIDER_MARKERS[provider.key];
-  const base = display.showProviderLetter
-    ? `${marker} ${provider.label}`
-    : marker;
+  const base = PROVIDER_ICON_MARKUP[provider.key] ?? provider.name;
   const alertBadge = getProviderAlertBadge(provider, display);
   return alertBadge ? `${base}${alertBadge}` : base;
 }
@@ -520,10 +496,10 @@ function getProviderAlertBadge(
   }
   const alertLevel = getProviderAlertLevel(provider, display);
   if (alertLevel === 'critical') {
-    return ' 🔴';
+    return ' [critical]';
   }
   if (alertLevel === 'warning') {
-    return ' 🟡';
+    return ' [warning]';
   }
   return '';
 }
@@ -554,12 +530,13 @@ function isWeeklyExhausted(data: AgentUsage, scale: UsageScale): boolean {
 
 function appendUsageTooltip(
   tip: vscode.MarkdownString,
+  providerKey: ProviderKey,
   name: string,
   data: AgentUsage,
   scale: UsageScale,
 ) {
-  tip.appendMarkdown(`**${name}**\n\n`);
-
+  const icon = PROVIDER_ICON_MARKUP[providerKey];
+  tip.appendMarkdown(`${icon} **${name}**\n\n`);
   // API fallback: show rate limit info from GitHub API
   if (data.displayHint && data.raw) {
     tip.appendMarkdown(`- ${data.displayHint}\n`);

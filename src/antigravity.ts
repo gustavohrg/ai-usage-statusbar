@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as http from 'http';
 import * as https from 'https';
-import type { AgentUsage, UsageWindow } from './provider-adapter';
+import type { AgentUsage, UsageWindow } from './provider-types';
 
 export const ANTIGRAVITY_QUOTA_SUMMARY_PATH =
   '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary';
@@ -10,10 +10,10 @@ export const ANTIGRAVITY_USER_STATUS_PATH =
 export const ANTIGRAVITY_COMMAND_MODEL_CONFIGS_PATH =
   '/exa.language_server_pb.LanguageServerService/GetCommandModelConfigs';
 
-const ANTIGRAVITY_TIMEOUT_MS = 8_000;
-const ANTIGRAVITY_REQUEST_TIMEOUT_MS = 3_000;
+const ANTIGRAVITY_TIMEOUT_MS = 10_000;
+const ANTIGRAVITY_REQUEST_TIMEOUT_MS = 1_500;
 const ANTIGRAVITY_QUOTA_RETRY_COUNT = 3;
-const ANTIGRAVITY_QUOTA_RETRY_DELAY_MS = 500;
+const ANTIGRAVITY_QUOTA_RETRY_DELAY_MS = 250;
 const LOOPBACK_HOST = '127.0.0.1';
 
 type JsonRecord = Record<string, unknown>;
@@ -708,13 +708,13 @@ async function probeAntigravity(
   );
   const diagnostics: string[] = [];
   for (const port of ports) {
-    for (const scheme of ['https', 'http'] as const) {
-      for (const pathname of paths) {
-        const retryCount =
-          pathname === ANTIGRAVITY_QUOTA_SUMMARY_PATH ||
-          pathname === ANTIGRAVITY_USER_STATUS_PATH
-            ? ANTIGRAVITY_QUOTA_RETRY_COUNT
-            : 1;
+    for (const pathname of paths) {
+      const retryCount =
+        pathname === ANTIGRAVITY_QUOTA_SUMMARY_PATH ||
+        pathname === ANTIGRAVITY_USER_STATUS_PATH
+          ? ANTIGRAVITY_QUOTA_RETRY_COUNT
+          : 1;
+      for (const scheme of ['https', 'http'] as const) {
         for (let attempt = 0; attempt < retryCount; attempt += 1) {
           if (attempt > 0) {
             await waitForAntigravityRetry(retryDelayMs);
@@ -762,6 +762,9 @@ async function probeAntigravity(
             const detail = `${scheme.toUpperCase()} ${port} ${name}: ${errorMessage(error)}${shape}`;
             diagnostics.push(detail.slice(0, 500));
             lastError = error;
+            if (!shouldRetryAntigravityRequest(error)) {
+              break;
+            }
           }
         }
       }
@@ -783,11 +786,7 @@ export async function getAntigravityUsage(
   } catch (error: unknown) {
     const detail = errorMessage(error).replace(/\s+/g, ' ').slice(0, 3_000);
     if (options.logger) {
-      options.logger(
-        `[ai-usage-statusbar] Antigravity probe failed: ${detail}`,
-      );
-    } else {
-      console.error(`[ai-usage-statusbar] Antigravity probe failed: ${detail}`);
+      options.logger(`[ai-usage-statusbar] Antigravity probe failed: ${detail}`);
     }
     return {
       fiveHour: null,
@@ -808,6 +807,20 @@ function errorMessage(error: unknown): string {
     return error;
   }
   return String(error ?? '');
+}
+function shouldRetryAntigravityRequest(error: unknown): boolean {
+  const text = errorMessage(error).toLowerCase();
+  return ![
+    'timed out',
+    'timeout',
+    'econn',
+    'socket',
+    'self-signed',
+    'certificate',
+    'wrong version',
+    'eproto',
+    'fetch failed',
+  ].some((marker) => text.includes(marker));
 }
 
 export function formatAntigravityError(error: unknown): string {
