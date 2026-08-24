@@ -1,4 +1,4 @@
-name: Release VSIX
+name: Release VSIX and Marketplace
 
 on:
   push:
@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   release:
-    # Prevent loops when this workflow pushes the version bump commit.
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    environment:
+      name: marketplace
 
     steps:
       - name: Checkout
@@ -31,47 +31,86 @@ jobs:
           node-version: '24'
           cache: npm
 
+      - name: Determine whether this version is new
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid package version: $version" >&2
+            exit 1
+          fi
+
+          tag="v${version}"
+          vsix="ai-usage-statusbar-gustavohrg-2026-${version}.vsix"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "vsix=$vsix" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse --verify "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${version} already has tag ${tag}; skipping release."
+          else
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${version} is new; release will proceed."
+          fi
+
       - name: Install dependencies
+        if: steps.release.outputs.should_release == 'true'
         run: npm ci
 
-      - name: Bump patch version
-        id: bump
-        run: |
-          npm version patch --no-git-tag-version
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Audit dependencies
+        if: steps.release.outputs.should_release == 'true'
+        run: npm audit --audit-level=high
 
-      - name: Build VSIX
+      - name: Test
+        if: steps.release.outputs.should_release == 'true'
+        run: npm test
+
+      - name: Package VSIX
+        if: steps.release.outputs.should_release == 'true'
         run: npm run package:vsix
 
-      - name: Commit release bump
+      - name: Publish to VS Code Marketplace
+        if: steps.release.outputs.should_release == 'true'
         env:
-          VERSION: ${{ steps.bump.outputs.version }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "chore(release): v$VERSION [skip ci]"
+          set -euo pipefail
+          : "${VSCE_PAT:?VSCE_PAT is required for Marketplace publishing}"
+          npx @vscode/vsce publish \
+            --pat "$VSCE_PAT" \
+            --packagePath "ai-usage-statusbar-gustavohrg-2026-${VERSION}.vsix"
 
-      - name: Create git tag
-        env:
-          VERSION: ${{ steps.bump.outputs.version }}
-        run: git tag "v$VERSION"
-
-      - name: Push commit and tag
-        run: git push origin HEAD:main --follow-tags
-
-      - name: Upload workflow artifact
+      - name: Upload VSIX artifact
+        if: steps.release.outputs.should_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: vsix-${{ steps.bump.outputs.version }}
-          path: '*.vsix'
+          name: vsix-${{ steps.release.outputs.version }}
+          path: ${{ steps.release.outputs.vsix }}
           if-no-files-found: error
 
+      - name: Create and push release tag
+        if: steps.release.outputs.should_release == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $VERSION"
+          git push origin "$TAG"
+
       - name: Create GitHub Release
+        if: steps.release.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.bump.outputs.version }}
-          name: v${{ steps.bump.outputs.version }}
-          files: '*.vsix'
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: v${{ steps.release.outputs.version }}
+          files: ${{ steps.release.outputs.vsix }}
           generate_release_notes: true
