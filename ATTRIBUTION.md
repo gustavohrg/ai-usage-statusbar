@@ -23,7 +23,7 @@ brand SVGs:
 Font Awesome Free licensing: https://fontawesome.com/license/free
 
 The source SVGs are distributed under the Font Awesome Free terms (icons: CC BY
-4.0; fonts: SIL OFL 1.1; code: MIT License). This project bundles outline
-adaptations for local, offline tooltip rendering. The bundled
-`fa-brands-400.woff2` file powers the VS Code custom icon contributions; no
-remote Font Awesome stylesheet or runtime network request is used.
+4.0; fonts: SIL OFL 1.1; code: MIT License). The outline SVG adaptations are
+bundled as local assets, while `fa-brands-400.woff2` powers the VS Code custom
+icon contributions used by the status bar and tooltip. No remote Font Awesome
+stylesheet or runtime network request is used.

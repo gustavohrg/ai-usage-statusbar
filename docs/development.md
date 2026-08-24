@@ -5,7 +5,7 @@ Quick reference for running this extension locally in VS Code.
 ## 1) One-time setup
 
 ```bash
-npm install
+npm ci
 npm run compile
 ```
 
@@ -43,8 +43,8 @@ npm run watch
 ## 4) Notes about runtime warnings
 
 Warnings like Node deprecation or experimental runtime messages can come from VS
-Code/Electron host internals, not from this extension logic. The debug profile
-env settings above are used to reduce that noise during development.
+Code host internals, not from this extension logic. The debug profile env
+settings above are used to reduce that noise during development.
 
 ## 5) Useful checks before commit
 
