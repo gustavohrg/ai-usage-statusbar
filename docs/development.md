@@ -9,37 +9,36 @@ npm install
 npm run compile
 ```
 
-## 2) Debug profiles
+## 2) Debug profile
 
-This repo includes debug profiles in `.vscode/launch.json`:
+This repo includes one debug profile in `.vscode/launch.json`:
 
 - `Run Extension`
   - Launches an Extension Development Host
-  - Runs `npm: compile` before launch
+  - Runs the `npm: compile` pre-launch task
   - Uses `--disable-extensions` to reduce noise from unrelated extensions
-- `Run Extension (No Compile)`
-  - Same launch behavior, but skips pre-launch compile
-  - Best used with watch mode running in a separate terminal
 
-Both profiles set:
+The profile sets:
 
 - `NODE_OPTIONS=--no-deprecation --no-warnings`
 - `NODE_NO_WARNINGS=1`
 
-This keeps debug console output focused on extension behavior.
+This keeps debug console output focused on extension behavior. No standalone
+`.vscode/tasks.json` file is required; VS Code discovers the `compile` npm
+script from `package.json`.
 
 ## 3) Recommended inner loop
 
-Terminal A:
+For a normal debug launch:
+
+1. Select `Run Extension` in the Run and Debug view.
+2. Start the Extension Development Host.
+
+For continuous recompilation while editing, run this in a separate terminal:
 
 ```bash
 npm run watch
 ```
-
-Debug session:
-
-1. Run `Run Extension` once.
-2. For quick relaunches, use `Run Extension (No Compile)`.
 
 ## 4) Notes about runtime warnings
 

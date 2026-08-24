@@ -39,6 +39,36 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "icons": {
+      "ai-usage-claude": {
+        "description": "Claude provider icon",
+        "default": {
+          "fontPath": "./assets/fonts/fa-brands-400.woff2",
+          "fontCharacter": "\\E861"
+        }
+      },
+      "ai-usage-codex": {
+        "description": "Codex provider icon",
+        "default": {
+          "fontPath": "./assets/fonts/fa-brands-400.woff2",
+          "fontCharacter": "\\E7CF"
+        }
+      },
+      "ai-usage-copilot": {
+        "description": "Copilot provider icon",
+        "default": {
+          "fontPath": "./assets/fonts/fa-brands-400.woff2",
+          "fontCharacter": "\\E8C7"
+        }
+      },
+      "ai-usage-antigravity": {
+        "description": "Antigravity provider icon",
+        "default": {
+          "fontPath": "./assets/fonts/fa-brands-400.woff2",
+          "fontCharacter": "\\F1A0"
+        }
+      }
+    },
     "configuration": {
       "title": "AI Usage Pulse GH 2026",
       "properties": {
@@ -64,22 +94,7 @@
         "aiUsageMonitor.enableThresholdColors": {
           "type": "boolean",
           "default": true,
-          "description": "Enable per-provider warning/critical indicators. For a single enabled provider, threshold color is also applied to the whole status bar item."
-        },
-        "aiUsageMonitor.showProviderLetter": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show provider letter (C/O/G/A) next to each provider marker in the status bar."
-        },
-        "aiUsageMonitor.providerMarkers": {
-          "type": "object",
-          "default": {
-            "claude": "🟠",
-            "codex": "🔵",
-            "copilot": "🟢",
-            "antigravity": "🟣"
-          },
-          "description": "Provider-to-marker mapping used in the status bar. Example: { \"claude\": \"🟠\", \"codex\": \"🔵\", \"copilot\": \"🟩\", \"antigravity\": \"🟣\" }"
+          "description": "Enable per-provider warning/critical text badges. For a single enabled provider, a theme-aware threshold color is also applied to the whole status bar item."
         },
         "aiUsageMonitor.copilotLookbackDays": {
           "type": "number",
@@ -122,23 +137,14 @@
           "default": 70,
           "minimum": 0,
           "maximum": 100,
-          "description": "Usage percentage threshold where the status bar switches to warning color."
+          "description": "Usage percentage threshold where the status bar shows a warning badge and theme-aware color."
         },
         "aiUsageMonitor.criticalThreshold": {
           "type": "number",
           "default": 85,
           "minimum": 0,
           "maximum": 100,
-          "description": "Usage percentage threshold where the status bar switches to critical color."
-        },
-        "aiUsageMonitor.statusBarColors": {
-          "type": "object",
-          "default": {
-            "disabled": "#6e7681",
-            "warning": "#d29922",
-            "critical": "#f85149"
-          },
-          "description": "Status bar color mapping. Supported keys: disabled, warning, critical."
+          "description": "Usage percentage threshold where the status bar shows a critical badge and theme-aware color."
         }
       }
     }

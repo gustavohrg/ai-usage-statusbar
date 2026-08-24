@@ -45,12 +45,13 @@ Then reload VS Code when prompted.
 
 - Single status bar indicator with Claude, Codex, Copilot, and optional
   Antigravity usage summary
-- Provider-level threshold warnings (warning and critical badges per provider)
+- Provider-level threshold warnings with text badges and theme-aware colors
 - Tooltip breakdown for 5-hour and 7-day windows
 - Antigravity tooltip details for Gemini, Claude/GPT, account, plan, and
   fallback data
+- Bundled Font Awesome outline identity assets and VS Code custom icon
+  contributions with readable provider-name fallback text
 - 60-second auto-refresh
-- Configurable provider markers and display options
 - Copilot estimated spend and token volume from local VS Code chat history
 
 ## Provider Support
@@ -96,30 +97,22 @@ Example:
     "antigravity"
   ],
   "aiUsageMonitor.enableThresholdColors": true,
-  "aiUsageMonitor.showProviderLetter": true,
-  "aiUsageMonitor.providerMarkers": {
-    "claude": "🟠",
-    "codex": "🔵",
-    "copilot": "🟢",
-    "antigravity": "🟣"
-  },
   "aiUsageMonitor.copilotWindowMode": "currentMonth",
   "aiUsageMonitor.copilotLookbackDays": 30,
   "aiUsageMonitor.warningThreshold": 70,
-  "aiUsageMonitor.criticalThreshold": 90,
-  "aiUsageMonitor.statusBarColors": {
-    "disabled": "#8b949e",
-    "warning": "#e3b341",
-    "critical": "#ff7b72"
-  }
+  "aiUsageMonitor.criticalThreshold": 90
 }
 ```
 
 ## Status Bar Example
 
 ```text
-🟠 C 72% 1h 30m 🔵 O 85% 45m 🟢 G 18% $20.2 1.4M tok
+$(ai-usage-claude) 72% 1h 30m   $(ai-usage-codex) 85% 45m   $(ai-usage-copilot) 18% $20.2 1.4M tok
 ```
+
+The `$(ai-usage-*)` references resolve to the bundled Font Awesome provider
+icons in VS Code. Tooltip headings enable VS Code theme icons and retain the
+provider name for accessibility.
 
 ## Requirements
 
