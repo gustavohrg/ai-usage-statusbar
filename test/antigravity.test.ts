@@ -1,7 +1,6 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
-
-import * as runtime from '../out/antigravity.js';
+const assert = require('node:assert/strict');
+const { test } = require('node:test');
+const runtime = require('../out/antigravity.js');
 
 type UsageResult = {
   utilization: number;
