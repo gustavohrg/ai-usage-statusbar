@@ -20,7 +20,7 @@ https://marketplace.visualstudio.com/items?itemName=gustavohrg.ai-usage-statusba
 ### From VSIX (manual install)
 
 ```bash
-npm install
+npm ci
 npm run package:vsix
 code --install-extension ai-usage-statusbar-gustavohrg-2026-<version>.vsix --force
 ```
@@ -100,7 +100,7 @@ Example:
   "aiUsageMonitor.copilotWindowMode": "currentMonth",
   "aiUsageMonitor.copilotLookbackDays": 30,
   "aiUsageMonitor.warningThreshold": 70,
-  "aiUsageMonitor.criticalThreshold": 90
+  "aiUsageMonitor.criticalThreshold": 85
 }
 ```
 
