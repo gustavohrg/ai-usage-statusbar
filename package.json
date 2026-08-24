@@ -158,7 +158,11 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.79.0",
-    "@vscode/vsce": "^3.9.1",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^6.0.3"
+  },
+  "allowScripts": {
+    "keytar@7.9.0": true,
+    "@vscode/vsce-sign@2.1.0": true
   }
 }

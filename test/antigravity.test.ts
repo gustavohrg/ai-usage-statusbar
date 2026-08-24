@@ -405,6 +405,54 @@ test('retries a transient quota summary parse failure', async () => {
   assert.equal(Math.round(usage.sevenDay.utilization), 50);
 });
 
+test('moves past timed-out endpoints without retrying the same request', async () => {
+  const attempts: Array<{ scheme: string; path: string }> = [];
+  const usage = await getAntigravityUsage({
+    discoverProcess: async () => ({
+      pid: 41001,
+      uid: 501,
+      command: '/custom/install/agy',
+    }),
+    discoverPorts: async () => [45123],
+    request: async ({ scheme, path }) => {
+      attempts.push({ scheme, path });
+      if (
+        scheme === 'https' &&
+        path === ANTIGRAVITY_QUOTA_SUMMARY_PATH
+      ) {
+        throw new Error('Antigravity request timed out');
+      }
+      if (scheme === 'http' && path === ANTIGRAVITY_QUOTA_SUMMARY_PATH) {
+        return summaryPayload([
+          {
+            displayName: 'Gemini Models',
+            buckets: [bucket({ bucketId: 'weekly', displayName: 'Weekly' })],
+          },
+        ]);
+      }
+      throw new Error('HTTP 404: endpoint unavailable');
+    },
+    retryDelayMs: 0,
+  });
+
+  assert.ok(usage.sevenDay);
+  assert.equal(
+    attempts.filter(
+      (attempt) =>
+        attempt.scheme === 'https' &&
+        attempt.path === ANTIGRAVITY_QUOTA_SUMMARY_PATH,
+    ).length,
+    1,
+  );
+  assert.ok(
+    attempts.some(
+      (attempt) =>
+        attempt.scheme === 'http' &&
+        attempt.path === ANTIGRAVITY_QUOTA_SUMMARY_PATH,
+    ),
+  );
+});
+
 test('tries HTTPS before falling back to HTTP', async () => {
   const attempts: Array<{ scheme: string; path: string }> = [];
   const usage = await getAntigravityUsage({

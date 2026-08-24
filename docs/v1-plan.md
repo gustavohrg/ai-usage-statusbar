@@ -33,6 +33,7 @@ rate-limit lookup, and Antigravity endpoint fallback probing.
 Keep the root reserved for product metadata and build configuration:
 
 ```text
+AGENTS.md
 README.md
 CHANGELOG.md
 ATTRIBUTION.md
@@ -40,9 +41,19 @@ LICENSE
 package.json
 package-lock.json
 tsconfig.json
+assets/
+  fonts/
+    fa-brands-400.woff2
+  providers/
 src/
   extension.ts
   provider-adapter.ts
+  provider-types.ts
+  provider-shared.ts
+  claude-provider.ts
+  codex-provider.ts
+  copilot-provider.ts
+  antigravity.ts
 docs/
   v1-plan.md
   development.md
@@ -114,15 +125,16 @@ antigravity
 
 - Replace the current user-configurable color-coded dots and emoji markers with
   Font Awesome brand assets for Claude, Codex, Copilot, and Antigravity.
-- Use the Font Awesome brand mapping that matches each provider's parent brand:
-  `claude` uses `faClaude`, `codex` uses `faOpenai`, `copilot` uses `faGithub`,
+- Use the Font Awesome brand mapping that matches each provider:
+  `claude` uses `faClaude`, `codex` uses `faOpenai`, `copilot` uses `faCopilot`,
   and `antigravity` uses `faGoogle`.
-- Render each provider logo in a consistent outline treatment: monochrome
-  stroke/line artwork on a transparent background, with no filled color dots and
-  no dependency on emoji fonts. The outline must remain recognizable at compact
-  status-bar size.
-- Bundle only the required local SVG assets; do not load provider artwork from
-  remote URLs at runtime.
+- Render each provider logo as monochrome Font Awesome identity. Use the
+  outline SVG adaptations for local artwork and the VS Code custom icon
+  contribution for the compact status-bar surface; both must remain
+  recognizable at small size.
+- Register the status-bar and tooltip icon IDs through `contributes.icons` and
+  the bundled Font Awesome brand font. Do not load provider artwork from remote
+  URLs at runtime.
 - Remove user-configurable marker symbols once the logo contract is in place.
   Provider identity must not depend on arbitrary color choices or emoji fonts.
 - Preserve an accessible textual provider name in the segment or tooltip when
@@ -134,10 +146,11 @@ The icon change must update `package.json`, README examples, tooltip rendering,
 and the VSIX asset allowlist together. Outline assets and their fallback must
 remain visually distinct without relying on color alone.
 
-Potential structural follow-up after the cleanup: split provider adapters and
-rendering helpers into smaller modules only when the split reduces coupling and
-can be verified without changing the displayed contract. No speculative
-abstraction is required for v1.
+Provider adapters are split by provider to keep provider-specific credentials,
+parsers, fallbacks, and transport logic isolated. `provider-adapter.ts` remains
+the stable barrel for the extension, while `provider-types.ts` and
+`provider-shared.ts` hold only shared contracts and transport/error utilities.
+No provider behavior or displayed contract changes as part of the split.
 
 ## Phase 4 — Verification gate
 
