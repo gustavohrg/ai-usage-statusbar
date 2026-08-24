@@ -78,8 +78,8 @@ For every function, branch, alias, and exported symbol:
 2. Delete code with no callsite, no manifest entry, and no supported external
    contract.
 3. Remove undocumented provider aliases and the user-configurable
-  `aiUsageMonitor.providerMarkers` setting when official-logo rendering replaces
-  it.
+  `aiUsageMonitor.providerMarkers` and `aiUsageMonitor.statusBarColors` settings
+  when official-logo rendering replaces them.
 4. Do not remove a provider fallback only because its name contains `fallback`:
   Codex session parsing, Copilot API rate-limit lookup, and Antigravity endpoint
   fallback probing are active recovery paths.
@@ -164,8 +164,8 @@ The release check must also confirm:
 - status-bar segments and tooltips use the approved Font Awesome outline assets,
   with a readable text fallback when the VS Code surface cannot render custom
   artwork;
-- the removed color-dot marker setting is absent from the v1 settings schema and
-  documentation;
+- the removed provider-marker and status-bar-color settings are absent from the
+  v1 settings schema and documentation;
 
 A v1 smoke session should enable Codex, confirm a live status-bar percentage and
 reset time, then exercise the unavailable-provider state without crashing the
