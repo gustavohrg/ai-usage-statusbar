@@ -4,6 +4,7 @@ import {
   CopilotUsageOptions,
   UsageResult,
   UsageWindow,
+  getAntigravityOptimisticWindow,
   getAntigravityUsage,
   getClaudeUsage,
   getCodexUsage,
@@ -276,7 +277,7 @@ function renderCombinedBar(
     .map((provider) => formatSegment(provider, display))
     .join('   ');
   const usable = providers
-    .map((provider) => getAlertPercent(provider.data, provider.scale))
+    .map((provider) => getAlertPercent(provider))
     .filter((v): v is number => typeof v === 'number');
   if (usable.length === 0) {
     bar.color = STATUS_BAR_COLORS.disabled;
@@ -365,6 +366,14 @@ function getMostConstrainedWindow(
   return null;
 }
 
+function getCompactWindow(
+  provider: ProviderViewModel,
+): { window: UsageResult; kind: UsageWindow['kind'] } | null {
+  return provider.key === 'antigravity'
+    ? getAntigravityOptimisticWindow(provider.data)
+    : getMostConstrainedWindow(provider.data);
+}
+
 function getDetailedUsageTooltip(
   tip: vscode.MarkdownString,
   data: AgentUsage,
@@ -389,7 +398,8 @@ function getDetailedUsageTooltip(
   }
 }
 
-function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
+function getAlertPercent(provider: ProviderViewModel): number | null {
+  const { data, scale } = provider;
   // API fallback: use rate limit percent
   if (data.displayHint && data.raw) {
     return data.raw.usedPercent;
@@ -398,7 +408,7 @@ function getAlertPercent(data: AgentUsage, scale: UsageScale): number | null {
     return null;
   }
   if (data.windows?.length) {
-    const compact = getMostConstrainedWindow(data);
+    const compact = getCompactWindow(provider);
     return compact ? toPercent(compact.window.utilization, scale) : null;
   }
   if (isWeeklyExhausted(data, scale)) {
@@ -423,7 +433,7 @@ function formatSegment(
     return `${prefix} unavailable`;
   }
 
-  const compact = data.windows?.length ? getMostConstrainedWindow(data) : null;
+  const compact = data.windows?.length ? getCompactWindow(provider) : null;
   if (data.windows?.length) {
     if (!compact) {
       return `${prefix} --`;
@@ -505,7 +515,7 @@ function getProviderAlertLevel(
   provider: ProviderViewModel,
   display: DisplayConfig,
 ): ProviderAlertLevel {
-  const used = getAlertPercent(provider.data, provider.scale);
+  const used = getAlertPercent(provider);
   if (used === null) {
     return 'none';
   }

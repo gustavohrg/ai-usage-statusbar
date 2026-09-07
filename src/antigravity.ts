@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as http from 'http';
 import * as https from 'https';
-import type { AgentUsage, UsageWindow } from './provider-types';
+import type { AgentUsage, UsageResult, UsageWindow } from './provider-types';
 
 export const ANTIGRAVITY_QUOTA_SUMMARY_PATH =
   '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary';
@@ -51,6 +51,7 @@ export interface AntigravityProbeOptions {
 
 interface AntigravityModelRow {
   label: string;
+  modelGroup: string;
   fraction: number | null;
   resetsAt: string;
   kind: UsageWindow['kind'];
@@ -334,6 +335,39 @@ function createUsage(windows: UsageWindow[], notes: string[] = []): AgentUsage {
   return usage;
 }
 
+export function getAntigravityOptimisticWindow(
+  data: AgentUsage,
+): { window: UsageResult; kind: UsageWindow['kind'] } | null {
+  const groups = new Map<string, UsageWindow>();
+  for (const candidate of data.windows ?? []) {
+    if (candidate.usageKnown === false) {
+      continue;
+    }
+    const group = candidate.modelGroup ?? candidate.label;
+    const current = groups.get(group);
+    if (!current || candidate.utilization > current.utilization) {
+      groups.set(group, candidate);
+    }
+  }
+
+  let selected: UsageWindow | undefined;
+  for (const candidate of groups.values()) {
+    if (!selected || candidate.utilization < selected.utilization) {
+      selected = candidate;
+    }
+  }
+  if (!selected) {
+    return null;
+  }
+  return {
+    window: {
+      utilization: selected.utilization,
+      resetsAt: selected.resetsAt,
+    },
+    kind: selected.kind,
+  };
+}
+
 function addNotes(data: AgentUsage, notes: string[]): AgentUsage {
   const existing = data.meta?.tooltipNotes ?? [];
   const merged = [...existing, ...notes].filter(
@@ -403,6 +437,7 @@ function parseQuotaBucket(
   );
   return {
     label: `${groupLabel} ${bucketLabel}`.trim(),
+    modelGroup: groupLabel,
     utilization: fraction === null ? 0 : clampPercent((1 - fraction) * 100),
     resetsAt,
     kind: classifyWindow(record, '', explicitWindow),
@@ -569,6 +604,7 @@ function modelRowToCandidate(rowValue: unknown): AntigravityModelRow | null {
   }
   return {
     label,
+    modelGroup: label,
     fraction,
     resetsAt,
     kind,
@@ -615,6 +651,7 @@ function parseModelUsage(rows: unknown[], notes: string[]): AgentUsage {
 
   const windows: UsageWindow[] = [...grouped.values()].map((candidate) => ({
     label: candidate.label,
+    modelGroup: candidate.modelGroup,
     utilization:
       candidate.fraction === null
         ? 0
