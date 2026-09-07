@@ -1,5 +1,6 @@
 export interface UsageWindow {
   label: string;
+  modelGroup?: string;
   utilization: number;
   resetsAt: string;
   kind: 'fiveHour' | 'sevenDay' | 'other';

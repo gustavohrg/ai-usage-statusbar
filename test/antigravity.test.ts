@@ -8,6 +8,7 @@ type UsageResult = {
 };
 type UsageWindow = {
   label: string;
+  modelGroup?: string;
   utilization: number;
   resetsAt: string;
   kind: 'fiveHour' | 'sevenDay' | 'other';
@@ -43,6 +44,9 @@ type AntigravityProbeOptions = {
 };
 type AntigravityRuntime = {
   ANTIGRAVITY_QUOTA_SUMMARY_PATH: string;
+  getAntigravityOptimisticWindow: (
+    usage: AgentUsage,
+  ) => { window: UsageResult; kind: UsageWindow['kind'] } | null;
   getAntigravityUsage: (
     options?: AntigravityProbeOptions,
   ) => Promise<AgentUsage>;
@@ -61,6 +65,7 @@ type AntigravityRuntime = {
 const antigravity = runtime as unknown as AntigravityRuntime;
 const {
   ANTIGRAVITY_QUOTA_SUMMARY_PATH,
+  getAntigravityOptimisticWindow,
   getAntigravityUsage,
   parseAntigravityCommandModelConfigs,
   parseAntigravityHeadlessUsage,
@@ -173,6 +178,43 @@ test('parses complete Gemini and Claude/GPT quota summary', () => {
     usage.windows.map((window) => window.kind),
     ['sevenDay', 'fiveHour', 'sevenDay', 'fiveHour'],
   );
+});
+
+test('uses the least-constrained AGY model group for compact usage', () => {
+  const usage = parseAntigravityQuotaSummary(
+    summaryPayload([
+      {
+        displayName: 'Gemini Models',
+        buckets: [
+          bucket({
+            bucketId: 'gemini-weekly',
+            displayName: 'Weekly limit',
+            remainingFraction: 0.9,
+          }),
+          bucket({
+            bucketId: 'gemini-5h',
+            displayName: '5-hour limit',
+            remainingFraction: 0.7,
+          }),
+        ],
+      },
+      {
+        displayName: 'Claude and GPT models',
+        buckets: [
+          bucket({
+            bucketId: 'claude-weekly',
+            displayName: 'Weekly limit',
+            remainingFraction: 0,
+          }),
+        ],
+      },
+    ]),
+  );
+
+  const compact = getAntigravityOptimisticWindow(usage);
+  assert.ok(compact);
+  assert.equal(Math.round(compact.window.utilization), 30);
+  assert.equal(compact.kind, 'fiveHour');
 });
 
 test('supports direct, nested, and one-of remaining fractions', () => {

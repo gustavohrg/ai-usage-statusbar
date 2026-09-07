@@ -10,6 +10,7 @@ export { getCodexUsage } from './codex-provider';
 export { getCopilotUsage } from './copilot-provider';
 
 export {
+  getAntigravityOptimisticWindow,
   getAntigravityUsage,
   parseAntigravityCommandModelConfigs,
   parseAntigravityHeadlessUsage,
