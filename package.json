@@ -3,7 +3,7 @@
   "displayName": "AI Usage Pulse GH 2026",
   "description": "VS Code status bar monitor for Claude, Codex, Copilot, and optional Antigravity usage",
   "icon": "icon.png",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "gustavohrg",
   "author": "Gustavo Henrique",
   "license": "MIT",
